@@ -3,7 +3,7 @@ import { InventoryItem } from '../types/inventory';
 
 const STORAGE_KEY = 'inventory_data';
 // --- ✅ تم تحديث الرابط هنا ---
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzmbsXCRdPvNxbnCxCwYEJgm2JtlxZ54H5WzANruMGrEmcICLZfLRrhp-JB8j5ntFEd/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxdxgpLg32p_5V9XZpd8Q71b80Zq0Tbo2X3-daLcPVRe8qJFQRwyIRF2EB47A_EDQk5/exec';
 
 // Load data from localStorage
 const loadFromStorage = (): InventoryItem[] => {
@@ -57,9 +57,6 @@ const transformGoogleSheetsData = (rawData: any[]): InventoryItem[] => {
     "3": Number(item["3"]) || 0,
   }));
 };
-
-// ... (rest of the file remains the same)
-// The full, correct file content is provided below for completeness
 
 interface UseInventoryDataReturn {
   data: InventoryItem[];
@@ -183,7 +180,10 @@ export const useInventoryData = (): UseInventoryDataReturn => {
       
       if (jsonData && jsonData.data && Array.isArray(jsonData.data)) {
         jsonData = jsonData.data;
-      } else if (!Array.isArray(jsonData)) {
+      } else if (jsonData.status === 'success' && Array.isArray(jsonData.data)) {
+        jsonData = jsonData.data;
+      }
+      else if (!Array.isArray(jsonData)) {
         throw new Error('Expected array of data from Google Sheets.');
       }
 
