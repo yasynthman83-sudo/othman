@@ -6,14 +6,16 @@ interface InventoryTableProps {
   data: InventoryItem[];
   loading?: boolean;
   error?: string | null;
-  updateLocalNote: (vfid: string, note: string) => void;
-  updateLocalChecked: (vfid: string, checked: boolean) => void;
+  // These functions are now required and will be passed from the parent page
+  onLocalNoteUpdate: (vfid: string, note: string) => void;
+  onLocalCheckedUpdate: (vfid: string, checked: boolean) => void;
 }
 
-const InventoryTable: React.FC<InventoryTableProps> = ({ data, loading, error, updateLocalNote, updateLocalChecked }) => {
+const InventoryTable: React.FC<InventoryTableProps> = ({ data, loading, error, onLocalNoteUpdate, onLocalCheckedUpdate }) => {
   const [localNotes, setLocalNotes] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    // Initialize local notes when data changes
     const initialNotes = data.reduce((acc, item) => {
       acc[item.VFID] = item.Notes || '';
       return acc;
@@ -22,19 +24,19 @@ const InventoryTable: React.FC<InventoryTableProps> = ({ data, loading, error, u
   }, [data]);
 
   const handleCheckboxChange = (vfid: string, checked: boolean) => {
-    // Call the function from the hook to update state and send to Google Sheet
-    updateLocalChecked(vfid, checked);
+    // Directly call the function passed via props
+    onLocalCheckedUpdate(vfid, checked);
   };
 
   const handleNotesChange = (vfid: string, value: string) => {
-    // Update local state for immediate UI feedback
+    // Update the note in the local state for a responsive UI
     setLocalNotes(prev => ({ ...prev, [vfid]: value }));
   };
 
   const handleNotesBlur = (vfid: string) => {
-    // When the user clicks away, send the final value to the hook
+    // When the user clicks away, call the prop function to save the change
     const finalNote = localNotes[vfid] || '';
-    updateLocalNote(vfid, finalNote);
+    onLocalNoteUpdate(vfid, finalNote);
   };
 
   if (loading) {
@@ -47,7 +49,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({ data, loading, error, u
   }
 
   if (error) {
-    return <div className="p-12 text-center text-red-600">{error}</div>;
+    return <div className="p-12 text-center text-red-600 font-semibold">{error}</div>;
   }
   
   if (data.length === 0) {
