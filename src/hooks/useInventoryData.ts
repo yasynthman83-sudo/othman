@@ -3,7 +3,7 @@ import { InventoryItem } from '../types/inventory';
 
 const STORAGE_KEY = 'inventory_data';
 // --- ✅ تم تحديث الرابط هنا ---
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxdxgpLg32p_5V9XZpd8Q71b80Zq0Tbo2X3-daLcPVRe8qJFQRwyIRF2EB47A_EDQk5/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVvZbPmThE3VN3QEIdkaCR5jE6wD123jJClYZqUwem0U3cd65IBiDk545y2KzpU01F/exec';
 
 // Load data from localStorage
 const loadFromStorage = (): InventoryItem[] => {
@@ -174,27 +174,28 @@ export const useInventoryData = (): UseInventoryDataReturn => {
         mode: 'cors',
       });
 
-      if (!response.ok) throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      if (!response.ok) throw new Error(`Failed to fetch`);
       
       let jsonData = await response.json();
       
-      if (jsonData && jsonData.data && Array.isArray(jsonData.data)) {
-        jsonData = jsonData.data;
-      } else if (jsonData.status === 'success' && Array.isArray(jsonData.data)) {
-        jsonData = jsonData.data;
-      }
-      else if (!Array.isArray(jsonData)) {
-        throw new Error('Expected array of data from Google Sheets.');
+      // Handle both direct array and object-wrapped array
+      let dataToProcess = [];
+      if (jsonData.status === 'success' && Array.isArray(jsonData.data)) {
+        dataToProcess = jsonData.data;
+      } else if (Array.isArray(jsonData)) {
+        dataToProcess = jsonData;
+      } else {
+        throw new Error('Invalid data format received from Google Sheets.');
       }
 
-      const transformedData = transformGoogleSheetsData(jsonData);
+      const transformedData = transformGoogleSheetsData(dataToProcess);
       setData(transformedData);
       saveToStorage(transformedData);
       showNotification(`✅ Successfully loaded ${transformedData.length} items.`);
       
     } catch (err: any) {
       setError(err.message);
-      showNotification(`❌ ${err.message}`);
+      showNotification(`❌ Error: ${err.message}`);
     } finally {
       setLoading(false);
     }
