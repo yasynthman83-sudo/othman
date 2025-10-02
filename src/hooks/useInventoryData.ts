@@ -3,7 +3,7 @@ import { InventoryItem } from '../types/inventory';
 
 const STORAGE_KEY = 'inventory_data';
 // --- ✅ تم تحديث الرابط هنا ---
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVvZbPmThE3VN3QEIdkaCR5jE6wD123jJClYZqUwem0U3cd65IBiDk545y2KzpU01F/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyHOKW27ZaVuwHPVq_iHdZc5zD-eTAb8qFZKZ4fdWO2qcHpuT2PYKFjh0KllxZkKfHO/exec';
 
 // Load data from localStorage
 const loadFromStorage = (): InventoryItem[] => {
@@ -176,22 +176,16 @@ export const useInventoryData = (): UseInventoryDataReturn => {
 
       if (!response.ok) throw new Error(`Failed to fetch`);
       
-      let jsonData = await response.json();
+      const jsonData = await response.json();
       
-      // Handle both direct array and object-wrapped array
-      let dataToProcess = [];
       if (jsonData.status === 'success' && Array.isArray(jsonData.data)) {
-        dataToProcess = jsonData.data;
-      } else if (Array.isArray(jsonData)) {
-        dataToProcess = jsonData;
+        const transformedData = transformGoogleSheetsData(jsonData.data);
+        setData(transformedData);
+        saveToStorage(transformedData);
+        showNotification(`✅ Successfully loaded ${transformedData.length} items.`);
       } else {
-        throw new Error('Invalid data format received from Google Sheets.');
+        throw new Error(jsonData.message || 'Invalid data format received from Google Sheets.');
       }
-
-      const transformedData = transformGoogleSheetsData(dataToProcess);
-      setData(transformedData);
-      saveToStorage(transformedData);
-      showNotification(`✅ Successfully loaded ${transformedData.length} items.`);
       
     } catch (err: any) {
       setError(err.message);
