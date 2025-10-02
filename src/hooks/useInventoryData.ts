@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { InventoryItem } from '../types/inventory';
 
 const STORAGE_KEY = 'inventory_data';
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbymGB6hjtmn99VFgkUHNz9H5FjjTw4E5k5ctEWgiFfJVmVmvPnpL94fXfau21yvLV10/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxWSxzwLuSrXPmoXy2IT-YLF8RqMkGhQGJ9Fu06V2EpxSkZ_tv_aWqgo3sAomjYt0A2/exec';
 
 // Load data from localStorage
 const loadFromStorage = (): InventoryItem[] => {
@@ -224,18 +224,20 @@ export const useInventoryData = (): UseInventoryDataReturn => {
     try {
       console.log('Updating Google Sheets for VFID:', vfid, 'Updates:', updates);
       
-      const updateData: any = {
-        action: 'update',
-        vfid: vfid
-      };
-      
+      let action = '';
+      let payload: any = { VFID: vfid };
+
       if (updates.Notes !== undefined) {
-        updateData.notes = updates.Notes;
+        action = 'updateNote';
+        payload.Note = updates.Notes;
       }
       
       if (updates.Checked !== undefined) {
-        updateData.checked = updates.Checked.toString();
+        action = 'updateChecked';
+        payload.Checked = updates.Checked;
       }
+      
+      payload.action = action;
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout for updates
@@ -245,7 +247,7 @@ export const useInventoryData = (): UseInventoryDataReturn => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(updateData),
+        body: JSON.stringify(payload),
         signal: controller.signal,
         mode: 'cors'
       });
@@ -255,7 +257,12 @@ export const useInventoryData = (): UseInventoryDataReturn => {
       if (!response.ok) {
         console.warn('Failed to update Google Sheets:', response.status, response.statusText);
       } else {
-        console.log('Successfully updated Google Sheets');
+        const result = await response.json();
+        if (result.status === 'success') {
+          console.log('Successfully updated Google Sheets');
+        } else {
+          console.warn('Failed to update Google Sheets:', result.message);
+        }
       }
     } catch (error: any) {
       console.warn('Error updating Google Sheets:', error);
@@ -322,14 +329,10 @@ export const useInventoryData = (): UseInventoryDataReturn => {
 
       console.log('Raw data received:', jsonData);
       
-      if (!Array.isArray(jsonData)) {
-        console.warn('Data is not an array, attempting to extract array from response');
-        // Sometimes Google Apps Script wraps data in an object
-        if (jsonData && jsonData.data && Array.isArray(jsonData.data)) {
+      if (jsonData && jsonData.data && Array.isArray(jsonData.data)) {
           jsonData = jsonData.data;
-        } else {
+      } else if (!Array.isArray(jsonData)) {
           throw new Error('Expected array of data from Google Sheets. Please check the Apps Script response format.');
-        }
       }
 
       const transformedData = transformGoogleSheetsData(jsonData);
@@ -367,7 +370,6 @@ export const useInventoryData = (): UseInventoryDataReturn => {
       console.log('Starting file upload:', file.name);
       
       const formData = new FormData();
-      formData.append('action', 'upload');
       formData.append('file', file);
 
       const controller = new AbortController();
@@ -375,9 +377,6 @@ export const useInventoryData = (): UseInventoryDataReturn => {
 
       const response = await fetch(GOOGLE_SCRIPT_URL, {
         method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-        },
         body: formData,
         signal: controller.signal,
         mode: 'cors'
@@ -398,12 +397,13 @@ export const useInventoryData = (): UseInventoryDataReturn => {
       const result = await response.json();
       console.log('Upload result:', result);
       
-      if (result.error) {
-        throw new Error(result.error);
+      // **FIXED HERE**: Check for result.status instead of result.success/result.error
+      if (result.status === 'error') {
+        throw new Error(result.message || 'An unknown error occurred during upload.');
       }
 
-      if (!result.success) {
-        throw new Error('Upload was not successful');
+      if (result.status !== 'success') {
+        throw new Error('Upload was not successful. The script returned an unexpected status.');
       }
 
       // Reload data after successful upload
