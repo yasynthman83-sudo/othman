@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { InventoryItem } from '../types/inventory';
 
 const STORAGE_KEY = 'inventory_data';
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxWSxzwLuSrXPmoXy2IT-YLF8RqMkGhQGJ9Fu06V2EpxSkZ_tv_aWqgo3sAomjYt0A2/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwyo7yIs9DgOmwfeYbI4OQ9NVlmqlboUZArx5ZXKc9YumgmOFRozeH0rSkY7ELVNBAc/exec';
 
 // Load data from localStorage
 const loadFromStorage = (): InventoryItem[] => {
