@@ -10,7 +10,7 @@ import { searchInventoryData } from '../utils/filterUtils';
 
 const RemainingItemsPage: React.FC = () => {
   const navigate = useNavigate();
-  // We need updateLocalNote and updateLocalChecked from the hook
+  // نحتاج لدوال الحفظ من الهوك
   const { data, loading, error, refetch, showToast, toastMessage, hideToast, updateLocalNote, updateLocalChecked } = useInventoryData();
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -30,7 +30,7 @@ const RemainingItemsPage: React.FC = () => {
         <div className="bg-white/90 backdrop-blur-sm shadow-lg border-b border-gray-200">
           <div className="px-4 sm:px-6 py-6 sm:py-8">
             <div className="flex items-center justify-between">
-              {/* Header content... */}
+              {/* محتوى الهيدر */}
               <div className="flex items-center space-x-2 sm:space-x-4">
                 <button
                   onClick={handleBack}
@@ -62,7 +62,7 @@ const RemainingItemsPage: React.FC = () => {
           <StatisticsBar checkedCount={0} totalCount={totalCount} remainingCount={totalCount} />
           <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} placeholder="Search remaining items..." />
           
-          {/* ✅ Correctly passing the required functions as props */}
+          {/* ✅ تمرير دوال الحفظ بشكل صحيح إلى الجدول */}
           <InventoryTable 
             data={searchedData} 
             loading={loading} 
