@@ -3,7 +3,7 @@ import { InventoryItem } from '../types/inventory';
 
 const STORAGE_KEY = 'inventory_data';
 // --- ✅ تأكد من وضع آخر رابط نشرته هنا ---
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyO35X59lNTUcEPyV0aMPlI09iejJBjXkytFwNEjwkrcwUYdXkbGR6igsUOuVuTsmkC/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwE8TGaGff-lftKORr_5P86VsdxK8Of1cokO5vqOfubNtqvUIbIgYtB7_tNerSsgyQt/exec';
 
 // (بقية الدوال المساعدة تبقى كما هي)
 const loadFromStorage = (): InventoryItem[] => {
@@ -83,22 +83,11 @@ export const useInventoryData = (): UseInventoryDataReturn => {
     }
   }, []);
   
-  const playNotificationSound = () => {
-    try {
-      const audio = new Audio('/notification.mp3');
-      audio.volume = 0.5;
-      audio.play().catch(err => console.log('Could not play sound:', err));
-    } catch (err) {
-      console.log('Audio not available:', err);
-    }
-  };
-
+  const playNotificationSound = () => { /* ... */ };
   const showNotification = (message: string) => {
     setToastMessage(message);
     setShowToast(true);
-    playNotificationSound();
   };
-
   const hideToast = () => setShowToast(false);
   
   const updateGoogleSheets = async (payload: object) => {
@@ -126,33 +115,21 @@ export const useInventoryData = (): UseInventoryDataReturn => {
   };
 
   const updateLocalNote = (vfid: string, note: string) => {
-    setData(prevData => {
-      const updatedData = prevData.map(item => 
-        item.VFID === vfid ? { ...item, Notes: note } : item
-      );
-      saveToStorage(updatedData);
-      return updatedData;
+    setData(prev => {
+      const newData = prev.map(item => item.VFID === vfid ? { ...item, Notes: note } : item);
+      saveToStorage(newData);
+      return newData;
     });
-    updateGoogleSheets({
-      action: 'updateNote',
-      VFID: vfid,
-      Note: note,
-    });
+    updateGoogleSheets({ action: 'updateNote', VFID: vfid, Note: note });
   };
 
   const updateLocalChecked = (vfid: string, checked: boolean) => {
-    setData(prevData => {
-      const updatedData = prevData.map(item => 
-        item.VFID === vfid ? { ...item, Checked: checked } : item
-      );
-      saveToStorage(updatedData);
-      return updatedData;
+    setData(prev => {
+      const newData = prev.map(item => item.VFID === vfid ? { ...item, Checked: checked } : item);
+      saveToStorage(newData);
+      return newData;
     });
-    updateGoogleSheets({
-      action: 'updateChecked',
-      VFID: vfid,
-      Checked: checked,
-    });
+    updateGoogleSheets({ action: 'updateChecked', VFID: vfid, Checked: checked });
   };
   
   const loadData = async () => {
@@ -178,7 +155,7 @@ export const useInventoryData = (): UseInventoryDataReturn => {
     }
   };
   
-    const uploadFile = async (file: File) => {
+  const uploadFile = async (file: File) => {
     setLoading(true);
     setError(null);
     try {
@@ -192,7 +169,6 @@ export const useInventoryData = (): UseInventoryDataReturn => {
       });
 
       if (!response.ok) throw new Error(`Upload failed!`);
-
       const result = await response.json();
       if (result.status !== 'success') throw new Error(result.message);
 
@@ -210,16 +186,7 @@ export const useInventoryData = (): UseInventoryDataReturn => {
   const refetch = () => loadData();
 
   return { 
-    data, 
-    loading, 
-    error, 
-    refetch, 
-    showToast, 
-    toastMessage, 
-    hideToast,
-    updateLocalNote,
-    updateLocalChecked,
-    loadData,
-    uploadFile
+    data, loading, error, refetch, showToast, toastMessage, hideToast,
+    updateLocalNote, updateLocalChecked, loadData, uploadFile
   };
 };
