@@ -3,7 +3,7 @@ import { InventoryItem } from '../types/inventory';
 
 const STORAGE_KEY = 'inventory_data';
 // --- ✅ تأكد من وضع آخر رابط نشرته هنا ---
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwE8TGaGff-lftKORr_5P86VsdxK8Of1cokO5vqOfubNtqvUIbIgYtB7_tNerSsgyQt/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby5p_Dl8jVSyriKUSMM6DBeONMdi3I43o7zmU3vt28sdhFOKWI0Na7iuScIHKcwRxYw/exec';
 
 // (بقية الدوال المساعدة تبقى كما هي)
 const loadFromStorage = (): InventoryItem[] => {
@@ -56,6 +56,7 @@ const transformGoogleSheetsData = (rawData: any[]): InventoryItem[] => {
   }));
 };
 
+
 interface UseInventoryDataReturn {
   data: InventoryItem[];
   loading: boolean;
@@ -70,6 +71,7 @@ interface UseInventoryDataReturn {
   uploadFile: (file: File) => Promise<void>;
 }
 
+
 export const useInventoryData = (): UseInventoryDataReturn => {
   const [data, setData] = useState<InventoryItem[]>(() => loadFromStorage());
   const [loading, setLoading] = useState(false);
@@ -83,13 +85,25 @@ export const useInventoryData = (): UseInventoryDataReturn => {
     }
   }, []);
   
-  const playNotificationSound = () => { /* ... */ };
+  const playNotificationSound = () => {
+    try {
+      const audio = new Audio('/notification.mp3');
+      audio.volume = 0.5;
+      audio.play().catch(err => console.log('Could not play sound:', err));
+    } catch (err) {
+      console.log('Audio not available:', err);
+    }
+  };
+
   const showNotification = (message: string) => {
     setToastMessage(message);
     setShowToast(true);
+    playNotificationSound();
   };
+
   const hideToast = () => setShowToast(false);
-  
+
+  // --- دالة إرسال التحديثات المعدلة ---
   const updateGoogleSheets = async (payload: object) => {
     try {
       const response = await fetch(GOOGLE_SCRIPT_URL, {
@@ -99,12 +113,13 @@ export const useInventoryData = (): UseInventoryDataReturn => {
         mode: 'cors',
       });
       
-      const result = await response.json();
+      const result = await response.json(); // اقرأ الرد دائماً
 
       if (response.ok && result.status === 'success') {
         console.log('Update successful:', result.message);
-        showNotification(`✅ ${result.message}`);
+        showNotification(`✅ ${result.message}`); // أظهر رسالة نجاح
       } else {
+        // إذا فشل الحفظ، أظهر رسالة الخطأ من السكربت
         console.warn('Update failed:', result.message);
         showNotification(`❌ ${result.message}`);
       }
@@ -114,22 +129,40 @@ export const useInventoryData = (): UseInventoryDataReturn => {
     }
   };
 
+  // --- دالة تحديث الملاحظات المعدلة ---
   const updateLocalNote = (vfid: string, note: string) => {
-    setData(prev => {
-      const newData = prev.map(item => item.VFID === vfid ? { ...item, Notes: note } : item);
-      saveToStorage(newData);
-      return newData;
+    // 1. تحديث الواجهة فوراً
+    setData(prevData => {
+      const updatedData = prevData.map(item => 
+        item.VFID === vfid ? { ...item, Notes: note } : item
+      );
+      saveToStorage(updatedData);
+      return updatedData;
     });
-    updateGoogleSheets({ action: 'updateNote', VFID: vfid, Note: note });
+    // 2. إرسال البيانات إلى السكربت
+    updateGoogleSheets({
+      action: 'updateNote',
+      VFID: vfid,
+      Note: note,
+    });
   };
 
+  // --- دالة تحديث خانة الاختيار المعدلة ---
   const updateLocalChecked = (vfid: string, checked: boolean) => {
-    setData(prev => {
-      const newData = prev.map(item => item.VFID === vfid ? { ...item, Checked: checked } : item);
-      saveToStorage(newData);
-      return newData;
+    // 1. تحديث الواجهة فوراً
+    setData(prevData => {
+      const updatedData = prevData.map(item => 
+        item.VFID === vfid ? { ...item, Checked: checked } : item
+      );
+      saveToStorage(updatedData);
+      return updatedData;
     });
-    updateGoogleSheets({ action: 'updateChecked', VFID: vfid, Checked: checked });
+    // 2. إرسال البيانات إلى السكربت
+    updateGoogleSheets({
+      action: 'updateChecked',
+      VFID: vfid,
+      Checked: checked,
+    });
   };
   
   const loadData = async () => {
@@ -145,7 +178,7 @@ export const useInventoryData = (): UseInventoryDataReturn => {
       const transformedData = transformGoogleSheetsData(result.data);
       setData(transformedData);
       saveToStorage(transformedData);
-      showNotification(`✅ Loaded ${transformedData.length} items.`);
+      showNotification(`✅ Successfully loaded ${transformedData.length} items.`);
       
     } catch (err: any) {
       setError(err.message);
@@ -155,7 +188,7 @@ export const useInventoryData = (): UseInventoryDataReturn => {
     }
   };
   
-  const uploadFile = async (file: File) => {
+    const uploadFile = async (file: File) => {
     setLoading(true);
     setError(null);
     try {
@@ -169,6 +202,7 @@ export const useInventoryData = (): UseInventoryDataReturn => {
       });
 
       if (!response.ok) throw new Error(`Upload failed!`);
+
       const result = await response.json();
       if (result.status !== 'success') throw new Error(result.message);
 
@@ -183,10 +217,20 @@ export const useInventoryData = (): UseInventoryDataReturn => {
     }
   };
 
+
   const refetch = () => loadData();
 
   return { 
-    data, loading, error, refetch, showToast, toastMessage, hideToast,
-    updateLocalNote, updateLocalChecked, loadData, uploadFile
+    data, 
+    loading, 
+    error, 
+    refetch, 
+    showToast, 
+    toastMessage, 
+    hideToast,
+    updateLocalNote,
+    updateLocalChecked,
+    loadData,
+    uploadFile
   };
 };
