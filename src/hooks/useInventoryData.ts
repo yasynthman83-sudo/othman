@@ -106,26 +106,47 @@ export const useInventoryData = (): UseInventoryDataReturn => {
   // --- دالة إرسال التحديثات المعدلة ---
   const updateGoogleSheets = async (payload: object) => {
     try {
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
       const response = await fetch(GOOGLE_SCRIPT_URL, {
-        method: 'POST',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
         mode: 'cors',
+        signal: controller.signal
       });
       
-      const result = await response.json(); // اقرأ الرد دائماً
+      clearTimeout(timeoutId);
+      
+      // Check if response is ok before trying to parse JSON
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
 
-      if (response.ok && result.status === 'success') {
+      if (result.status === 'success') {
         console.log('Update successful:', result.message);
         showNotification(`✅ ${result.message}`); // أظهر رسالة نجاح
       } else {
         // إذا فشل الحفظ، أظهر رسالة الخطأ من السكربت
-        console.warn('Update failed:', result.message);
-        showNotification(`❌ ${result.message}`);
+        const errorMessage = result.message || 'Unknown error from server';
+        console.warn('Update failed:', errorMessage);
+        showNotification(`❌ ${errorMessage}`);
       }
     } catch (error) {
       console.error('Error updating sheet:', error);
-      showNotification(`❌ خطأ في الشبكة أثناء الحفظ.`);
+      
+      if (error.name === 'AbortError') {
+        showNotification(`❌ Request timeout - please try again`);
+      } else if (error.message.includes('Failed to fetch')) {
+        showNotification(`❌ Network error: Cannot reach Google Apps Script. Check your connection and script deployment.`);
+      } else {
+        showNotification(`❌ Update failed: ${error.message}`);
+      }
     }
   };
 
