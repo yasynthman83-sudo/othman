@@ -111,9 +111,10 @@ export const useInventoryData = (): UseInventoryDataReturn => {
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
       const response = await fetch(GOOGLE_SCRIPT_URL, {
+        headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
-        headers: { 'Content-Type': 'application/json' },
+        },
         body: JSON.stringify(payload),
         mode: 'cors',
         signal: controller.signal
