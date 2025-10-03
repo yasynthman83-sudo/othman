@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { InventoryItem } from '../types/inventory';
 
 const STORAGE_KEY = 'inventory_data';
-// --- ✅ تم تحديث الرابط هنا ---
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbylTlj0gj_uWfYif_LOIMYSI2ar4kZM6GFfTeAusGLs5zMz-0F_D4Lv8FJmIQWYsF9n/exec';
+// --- ✅ تأكد من وضع آخر رابط نشرته هنا ---
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw8XcxDTfm7p0a8_bJ2MqVvScyH6D2cXQJaqDMQfYd1ERgjkNQ_gv5F-Q-JBtyDd5z-/exec';
 
-// Load data from localStorage
+// (بقية الدوال المساعدة تبقى كما هي)
 const loadFromStorage = (): InventoryItem[] => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -33,7 +33,6 @@ const loadFromStorage = (): InventoryItem[] => {
   return [];
 };
 
-// Save data to localStorage
 const saveToStorage = (data: InventoryItem[]) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -42,7 +41,6 @@ const saveToStorage = (data: InventoryItem[]) => {
   }
 };
 
-// Transform Google Sheets data to InventoryItem format
 const transformGoogleSheetsData = (rawData: any[]): InventoryItem[] => {
   return rawData.map(item => ({
     ProductName: String(item.ProductName || item['Product Name'] || ''),
@@ -52,11 +50,12 @@ const transformGoogleSheetsData = (rawData: any[]): InventoryItem[] => {
     Notes: String(item.Notes || item.Note || ''),
     Quantity: Number(item.Quantity) || 0,
     OrdersCount: Number(item.OrdersCount || item['Orders Count'] || item.Orders || 0),
-    Checked: item.Checked === 'TRUE' || item.Checked === true || item.Checked === 'true' || false,
+    Checked: item.Checked === 'TRUE' || item.Checked === true,
     "1": Number(item["1"]) || 0,
     "3": Number(item["3"]) || 0,
   }));
 };
+
 
 interface UseInventoryDataReturn {
   data: InventoryItem[];
@@ -72,6 +71,7 @@ interface UseInventoryDataReturn {
   uploadFile: (file: File) => Promise<void>;
 }
 
+
 export const useInventoryData = (): UseInventoryDataReturn => {
   const [data, setData] = useState<InventoryItem[]>(() => loadFromStorage());
   const [loading, setLoading] = useState(false);
@@ -84,12 +84,12 @@ export const useInventoryData = (): UseInventoryDataReturn => {
       loadData();
     }
   }, []);
-
+  
   const playNotificationSound = () => {
     try {
       const audio = new Audio('/notification.mp3');
       audio.volume = 0.5;
-      audio.play().catch(err => console.log('Could not play notification sound:', err));
+      audio.play().catch(err => console.log('Could not play sound:', err));
     } catch (err) {
       console.log('Audio not available:', err);
     }
@@ -103,7 +103,35 @@ export const useInventoryData = (): UseInventoryDataReturn => {
 
   const hideToast = () => setShowToast(false);
 
+  // --- دالة إرسال التحديثات المعدلة ---
+  const updateGoogleSheets = async (payload: object) => {
+    try {
+      const response = await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        mode: 'cors',
+      });
+      
+      const result = await response.json(); // اقرأ الرد دائماً
+
+      if (response.ok && result.status === 'success') {
+        console.log('Update successful:', result.message);
+        showNotification(`✅ ${result.message}`); // أظهر رسالة نجاح
+      } else {
+        // إذا فشل الحفظ، أظهر رسالة الخطأ من السكربت
+        console.warn('Update failed:', result.message);
+        showNotification(`❌ ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error updating sheet:', error);
+      showNotification(`❌ خطأ في الشبكة أثناء الحفظ.`);
+    }
+  };
+
+  // --- دالة تحديث الملاحظات المعدلة ---
   const updateLocalNote = (vfid: string, note: string) => {
+    // 1. تحديث الواجهة فوراً
     setData(prevData => {
       const updatedData = prevData.map(item => 
         item.VFID === vfid ? { ...item, Notes: note } : item
@@ -111,10 +139,17 @@ export const useInventoryData = (): UseInventoryDataReturn => {
       saveToStorage(updatedData);
       return updatedData;
     });
-    updateGoogleSheets(vfid, { Notes: note });
+    // 2. إرسال البيانات إلى السكربت
+    updateGoogleSheets({
+      action: 'updateNote',
+      VFID: vfid,
+      Note: note,
+    });
   };
 
+  // --- دالة تحديث خانة الاختيار المعدلة ---
   const updateLocalChecked = (vfid: string, checked: boolean) => {
+    // 1. تحديث الواجهة فوراً
     setData(prevData => {
       const updatedData = prevData.map(item => 
         item.VFID === vfid ? { ...item, Checked: checked } : item
@@ -122,69 +157,28 @@ export const useInventoryData = (): UseInventoryDataReturn => {
       saveToStorage(updatedData);
       return updatedData;
     });
-    updateGoogleSheets(vfid, { Checked: checked });
+    // 2. إرسال البيانات إلى السكربت
+    updateGoogleSheets({
+      action: 'updateChecked',
+      VFID: vfid,
+      Checked: checked,
+    });
   };
-
-  const updateGoogleSheets = async (vfid: string, updates: { Notes?: string; Checked?: boolean }) => {
-    try {
-      let action = '';
-      let payload: any = { VFID: vfid };
-
-      if (updates.Notes !== undefined) {
-        action = 'updateNote';
-        payload.Note = updates.Notes;
-      }
-      
-      if (updates.Checked !== undefined) {
-        action = 'updateChecked';
-        payload.Checked = updates.Checked;
-      }
-      
-      payload.action = action;
-
-      const response = await fetch(GOOGLE_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        mode: 'cors'
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.status === 'success') {
-          console.log('Successfully updated Google Sheets');
-        } else {
-          console.warn('Failed to update Google Sheets:', result.message);
-        }
-      } else {
-        console.warn('Failed to update Google Sheets:', response.statusText);
-      }
-    } catch (error) {
-      console.warn('Error updating Google Sheets:', error);
-    }
-  };
-
+  
   const loadData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(GOOGLE_SCRIPT_URL, {
-        method: 'GET',
-        mode: 'cors',
-      });
+      const response = await fetch(GOOGLE_SCRIPT_URL);
+      if (!response.ok) throw new Error('Failed to fetch data from the server.');
+      
+      const result = await response.json();
+      if (result.status !== 'success') throw new Error(result.message);
 
-      if (!response.ok) throw new Error(`Failed to fetch`);
-      
-      const jsonData = await response.json();
-      
-      if (jsonData.status === 'success' && Array.isArray(jsonData.data)) {
-        const transformedData = transformGoogleSheetsData(jsonData.data);
-        setData(transformedData);
-        saveToStorage(transformedData);
-        showNotification(`✅ Successfully loaded ${transformedData.length} items.`);
-      } else {
-        throw new Error(jsonData.message || 'Invalid data format received from Google Sheets.');
-      }
+      const transformedData = transformGoogleSheetsData(result.data);
+      setData(transformedData);
+      saveToStorage(transformedData);
+      showNotification(`✅ Successfully loaded ${transformedData.length} items.`);
       
     } catch (err: any) {
       setError(err.message);
@@ -193,8 +187,8 @@ export const useInventoryData = (): UseInventoryDataReturn => {
       setLoading(false);
     }
   };
-
-  const uploadFile = async (file: File) => {
+  
+    const uploadFile = async (file: File) => {
     setLoading(true);
     setError(null);
     try {
@@ -207,19 +201,12 @@ export const useInventoryData = (): UseInventoryDataReturn => {
         mode: 'cors'
       });
 
-      if (!response.ok) throw new Error(`Upload failed! status: ${response.status} - ${response.statusText}`);
+      if (!response.ok) throw new Error(`Upload failed!`);
 
       const result = await response.json();
+      if (result.status !== 'success') throw new Error(result.message);
 
-      if (result.status === 'error') {
-        throw new Error(result.message || 'An unknown error occurred during upload.');
-      }
-
-      if (result.status !== 'success') {
-        throw new Error('Upload was not successful.');
-      }
-
-      showNotification(`✅ File uploaded successfully: ${file.name}`);
+      showNotification(`✅ File uploaded successfully!`);
       await loadData();
       
     } catch (err: any) {
@@ -229,6 +216,7 @@ export const useInventoryData = (): UseInventoryDataReturn => {
       setLoading(false);
     }
   };
+
 
   const refetch = () => loadData();
 
