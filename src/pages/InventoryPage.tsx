@@ -14,7 +14,7 @@ import { FilterType } from '../types/inventory';
 const InventoryPage: React.FC = () => {
   const { filterType } = useParams<{ filterType: string }>();
   const navigate = useNavigate();
-  // We need updateLocalNote and updateLocalChecked from the hook
+  // نحتاج لدوال الحفظ من الهوك
   const { data, loading, error, refetch, showToast, toastMessage, hideToast, updateLocalNote, updateLocalChecked } = useInventoryData();
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -52,7 +52,7 @@ const InventoryPage: React.FC = () => {
         <div className="bg-white/90 backdrop-blur-sm shadow-lg border-b border-gray-200">
           <div className="px-4 sm:px-6 py-6 sm:py-8">
             <div className="flex items-center justify-between">
-              {/* Header content... */}
+              {/* محتوى الهيدر */}
               <div className="flex items-center space-x-2 sm:space-x-4">
                 <button
                   onClick={handleBack}
@@ -77,15 +77,6 @@ const InventoryPage: React.FC = () => {
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               </button>
             </div>
-            {/* Sub-header content... */}
-            <div className="mt-4 sm:mt-6 flex flex-wrap items-center gap-4 text-sm text-gray-600">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                <span>Local Data (Persistent)</span>
-              </div>
-              <span>Total Items: <strong className="text-gray-900 text-lg">{searchedData.length}</strong></span>
-              <span>Filter: <strong className="text-fedshi-purple text-lg">{filterType}</strong></span>
-            </div>
           </div>
         </div>
 
@@ -93,7 +84,7 @@ const InventoryPage: React.FC = () => {
           <StatisticsBar checkedCount={checkedCount} totalCount={totalCount} remainingCount={remainingCount} />
           <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} />
           
-          {/* ✅ Correctly passing the required functions as props */}
+          {/* ✅ تمرير دوال الحفظ بشكل صحيح إلى الجدول */}
           <InventoryTable 
             data={searchedData} 
             loading={loading} 
