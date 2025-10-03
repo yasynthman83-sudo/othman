@@ -4,7 +4,7 @@
  */
 
 // Configuration - Update these values for your specific setup
-const SHEET_ID = 'YOUR_GOOGLE_SHEET_ID_HERE'; // Replace with your actual Sheet ID
+const SHEET_ID = '1BH8Jw5Q2vK3mL9nP7rS8tU4vW6xY0zA1bC2dE3fG4hI5'; // Replace with your actual Sheet ID
 const SHEET_NAME = 'Sheet1'; // Replace with your actual sheet name
 
 /**

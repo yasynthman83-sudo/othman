@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { InventoryItem } from '../types/inventory';
 
 const STORAGE_KEY = 'inventory_data';
-// --- ✅ تأكد من وضع آخر رابط نشرته هنا ---
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwbPMBEOgRo9MaJETrwSQ-Tgvsas8Zkk5KUuLAmh7anx8mxJdPnfv5TYdGsCd8AmuWZ/exec';
+// Updated to the correct Google Apps Script URL
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxWSxzwLuSrXPmoXy2IT-YLF8RqMkGhQGJ9Fu06V2EpxSkZ_tv_aWqgo3sAomjYt0A2/exec';
 
 // (بقية الدوال المساعدة تبقى كما هي)
 const loadFromStorage = (): InventoryItem[] => {
