@@ -3,7 +3,7 @@ import { InventoryItem } from '../types/inventory';
 
 const STORAGE_KEY = 'inventory_data';
 // --- ✅ تأكد من وضع آخر رابط نشرته هنا ---
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw8XcxDTfm7p0a8_bJ2MqVvScyH6D2cXQJaqDMQfYd1ERgjkNQ_gv5F-Q-JBtyDd5z-/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyO35X59lNTUcEPyV0aMPlI09iejJBjXkytFwNEjwkrcwUYdXkbGR6igsUOuVuTsmkC/exec';
 
 // (بقية الدوال المساعدة تبقى كما هي)
 const loadFromStorage = (): InventoryItem[] => {
@@ -50,12 +50,11 @@ const transformGoogleSheetsData = (rawData: any[]): InventoryItem[] => {
     Notes: String(item.Notes || item.Note || ''),
     Quantity: Number(item.Quantity) || 0,
     OrdersCount: Number(item.OrdersCount || item['Orders Count'] || item.Orders || 0),
-    Checked: item.Checked === 'TRUE' || item.Checked === true,
+    Checked: item.Checked === true || String(item.Checked).toUpperCase() === 'TRUE',
     "1": Number(item["1"]) || 0,
     "3": Number(item["3"]) || 0,
   }));
 };
-
 
 interface UseInventoryDataReturn {
   data: InventoryItem[];
@@ -70,7 +69,6 @@ interface UseInventoryDataReturn {
   loadData: () => Promise<void>;
   uploadFile: (file: File) => Promise<void>;
 }
-
 
 export const useInventoryData = (): UseInventoryDataReturn => {
   const [data, setData] = useState<InventoryItem[]>(() => loadFromStorage());
@@ -102,8 +100,7 @@ export const useInventoryData = (): UseInventoryDataReturn => {
   };
 
   const hideToast = () => setShowToast(false);
-
-  // --- دالة إرسال التحديثات المعدلة ---
+  
   const updateGoogleSheets = async (payload: object) => {
     try {
       const response = await fetch(GOOGLE_SCRIPT_URL, {
@@ -113,13 +110,12 @@ export const useInventoryData = (): UseInventoryDataReturn => {
         mode: 'cors',
       });
       
-      const result = await response.json(); // اقرأ الرد دائماً
+      const result = await response.json();
 
       if (response.ok && result.status === 'success') {
         console.log('Update successful:', result.message);
-        showNotification(`✅ ${result.message}`); // أظهر رسالة نجاح
+        showNotification(`✅ ${result.message}`);
       } else {
-        // إذا فشل الحفظ، أظهر رسالة الخطأ من السكربت
         console.warn('Update failed:', result.message);
         showNotification(`❌ ${result.message}`);
       }
@@ -129,9 +125,7 @@ export const useInventoryData = (): UseInventoryDataReturn => {
     }
   };
 
-  // --- دالة تحديث الملاحظات المعدلة ---
   const updateLocalNote = (vfid: string, note: string) => {
-    // 1. تحديث الواجهة فوراً
     setData(prevData => {
       const updatedData = prevData.map(item => 
         item.VFID === vfid ? { ...item, Notes: note } : item
@@ -139,7 +133,6 @@ export const useInventoryData = (): UseInventoryDataReturn => {
       saveToStorage(updatedData);
       return updatedData;
     });
-    // 2. إرسال البيانات إلى السكربت
     updateGoogleSheets({
       action: 'updateNote',
       VFID: vfid,
@@ -147,9 +140,7 @@ export const useInventoryData = (): UseInventoryDataReturn => {
     });
   };
 
-  // --- دالة تحديث خانة الاختيار المعدلة ---
   const updateLocalChecked = (vfid: string, checked: boolean) => {
-    // 1. تحديث الواجهة فوراً
     setData(prevData => {
       const updatedData = prevData.map(item => 
         item.VFID === vfid ? { ...item, Checked: checked } : item
@@ -157,7 +148,6 @@ export const useInventoryData = (): UseInventoryDataReturn => {
       saveToStorage(updatedData);
       return updatedData;
     });
-    // 2. إرسال البيانات إلى السكربت
     updateGoogleSheets({
       action: 'updateChecked',
       VFID: vfid,
@@ -178,7 +168,7 @@ export const useInventoryData = (): UseInventoryDataReturn => {
       const transformedData = transformGoogleSheetsData(result.data);
       setData(transformedData);
       saveToStorage(transformedData);
-      showNotification(`✅ Successfully loaded ${transformedData.length} items.`);
+      showNotification(`✅ Loaded ${transformedData.length} items.`);
       
     } catch (err: any) {
       setError(err.message);
@@ -216,7 +206,6 @@ export const useInventoryData = (): UseInventoryDataReturn => {
       setLoading(false);
     }
   };
-
 
   const refetch = () => loadData();
 
