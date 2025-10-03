@@ -3,7 +3,7 @@ import { InventoryItem } from '../types/inventory';
 
 const STORAGE_KEY = 'inventory_data';
 // --- ✅ تأكد من وضع آخر رابط نشرته هنا ---
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby5p_Dl8jVSyriKUSMM6DBeONMdi3I43o7zmU3vt28sdhFOKWI0Na7iuScIHKcwRxYw/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbymT6DwQ8fis9ykULWBLunBTOuSjaW-N1ERz_GT7G2YbjpNA8eIY2h_mNMY8oOIJoQa/exec';
 
 // (بقية الدوال المساعدة تبقى كما هي)
 const loadFromStorage = (): InventoryItem[] => {
