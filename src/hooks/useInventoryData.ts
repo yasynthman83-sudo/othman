@@ -111,6 +111,7 @@ export const useInventoryData = (): UseInventoryDataReturn => {
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
       const response = await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
@@ -191,6 +192,7 @@ export const useInventoryData = (): UseInventoryDataReturn => {
     setLoading(true);
     setError(null);
     try {
+      // Use GET request for reading data
       const response = await fetch(GOOGLE_SCRIPT_URL);
       if (!response.ok) throw new Error('Failed to fetch data from the server.');
       

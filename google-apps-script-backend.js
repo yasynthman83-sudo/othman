@@ -14,32 +14,10 @@ function doGet(e) {
   try {
     const params = e.parameter || {};
     const callback = params.callback;
-    const action = params.action || 'getData';
+    // GET requests are only for reading data
+    const action = 'getData';
     
-    let result;
-    
-    switch (action) {
-      case 'getData':
-        result = getData();
-        break;
-      case 'updateChecked':
-        result = updateChecked(params.VFID, params.Checked);
-        break;
-      case 'updateNote':
-        result = updateNote(params.VFID, params.Note);
-        break;
-      case 'updateBoth':
-        result = updateBoth(params.VFID, params.Checked, params.Note);
-        break;
-      case 'testConnection':
-        result = testConnection();
-        break;
-      default:
-        result = {
-          status: 'error',
-          message: 'Invalid action. Supported actions: getData, updateChecked, updateNote, updateBoth, testConnection'
-        };
-    }
+    const result = getData();
     
     // Return JSONP response if callback is provided
     if (callback) {
@@ -67,6 +45,64 @@ function doGet(e) {
         .createTextOutput(jsonpResponse)
         .setMimeType(ContentService.MimeType.JAVASCRIPT);
     }
+    
+    return ContentService
+      .createTextOutput(JSON.stringify(errorResult))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+/**
+ * Main doPost function - handles POST requests with JSON body
+ */
+function doPost(e) {
+  try {
+    // Parse JSON body from POST request
+    const postData = e.postData;
+    if (!postData || !postData.contents) {
+      throw new Error('No POST data received');
+    }
+    
+    let requestData;
+    try {
+      requestData = JSON.parse(postData.contents);
+    } catch (parseError) {
+      throw new Error('Invalid JSON in POST body: ' + parseError.toString());
+    }
+    
+    const action = requestData.action;
+    let result;
+    
+    switch (action) {
+      case 'updateChecked':
+        result = updateChecked(requestData.VFID, requestData.Checked);
+        break;
+      case 'updateNote':
+        result = updateNote(requestData.VFID, requestData.Note);
+        break;
+      case 'updateBoth':
+        result = updateBoth(requestData.VFID, requestData.Checked, requestData.Note);
+        break;
+      case 'testConnection':
+        result = testConnection();
+        break;
+      default:
+        result = {
+          status: 'error',
+          message: 'Invalid action. Supported POST actions: updateChecked, updateNote, updateBoth, testConnection'
+        };
+    }
+    
+    // Always return JSON for POST requests
+    return ContentService
+      .createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (error) {
+    const errorResult = {
+      status: 'error',
+      message: 'POST request error: ' + error.toString()
+    };
     
     return ContentService
       .createTextOutput(JSON.stringify(errorResult))
@@ -348,18 +384,18 @@ function testConnection() {
  * 
  * Usage Examples:
  * 
- * Get all data (JSONP):
- * https://script.google.com/.../exec?callback=myCallback
- * 
- * Get all data (JSON):
+ * Get all data (GET request):
  * https://script.google.com/.../exec
  * 
- * Update checked status (JSONP):
- * https://script.google.com/.../exec?action=updateChecked&VFID=VF001&Checked=true&callback=myCallback
+ * Update data (POST request with JSON body):
+ * POST https://script.google.com/.../exec
+ * Body: {"action": "updateChecked", "VFID": "VF001", "Checked": true}
  * 
- * Update note (JSONP):
- * https://script.google.com/.../exec?action=updateNote&VFID=VF001&Note=My%20note&callback=myCallback
+ * Update note (POST request with JSON body):
+ * POST https://script.google.com/.../exec
+ * Body: {"action": "updateNote", "VFID": "VF001", "Note": "My note"}
  * 
- * Test connection:
- * https://script.google.com/.../exec?action=testConnection&callback=myCallback
+ * Update both (POST request with JSON body):
+ * POST https://script.google.com/.../exec
+ * Body: {"action": "updateBoth", "VFID": "VF001", "Checked": true, "Note": "My note"}
  */
