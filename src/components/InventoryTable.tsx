@@ -6,7 +6,7 @@ interface InventoryTableProps {
   data: InventoryItem[];
   loading?: boolean;
   error?: string | null;
-  // These functions are now required and will be passed from the parent page
+  // هذه الدوال مطلوبة الآن وسيتم تمريرها من الصفحة الرئيسية
   onLocalNoteUpdate: (vfid: string, note: string) => void;
   onLocalCheckedUpdate: (vfid: string, checked: boolean) => void;
 }
@@ -15,7 +15,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({ data, loading, error, o
   const [localNotes, setLocalNotes] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    // Initialize local notes when data changes
+    // تحديث الملاحظات المحلية عند تغير البيانات
     const initialNotes = data.reduce((acc, item) => {
       acc[item.VFID] = item.Notes || '';
       return acc;
@@ -24,17 +24,17 @@ const InventoryTable: React.FC<InventoryTableProps> = ({ data, loading, error, o
   }, [data]);
 
   const handleCheckboxChange = (vfid: string, checked: boolean) => {
-    // Directly call the function passed via props
+    // استدعاء الدالة مباشرة من الـ props للحفظ
     onLocalCheckedUpdate(vfid, checked);
   };
 
   const handleNotesChange = (vfid: string, value: string) => {
-    // Update the note in the local state for a responsive UI
+    // تحديث الملاحظة محلياً لسرعة الاستجابة
     setLocalNotes(prev => ({ ...prev, [vfid]: value }));
   };
 
   const handleNotesBlur = (vfid: string) => {
-    // When the user clicks away, call the prop function to save the change
+    // عند الخروج من حقل الملاحظات، قم بالحفظ
     const finalNote = localNotes[vfid] || '';
     onLocalNoteUpdate(vfid, finalNote);
   };
