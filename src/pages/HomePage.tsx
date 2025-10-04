@@ -248,8 +248,8 @@ export default function HomePage() {
             </div>
             
             <div className="text-xs sm:text-sm text-gray-600 space-y-1 mt-4">
-              <p><strong>Auto-refresh:</strong> Data refreshes automatically every 10 seconds</p>
-              <p><strong>Upload:</strong> Click the upload button to update data with Excel/CSV file</p>
+              <p><strong>Auto-refresh:</strong> </p>
+              <p><strong>Upload:</strong> </p>
                 {error && (
                   <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
                     <p className="text-red-700 text-sm font-medium">Connection Issue:</p>
