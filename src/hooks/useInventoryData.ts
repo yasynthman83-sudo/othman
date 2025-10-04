@@ -4,7 +4,7 @@ import { InventoryItem } from '../types/inventory';
 
 const STORAGE_KEY = 'inventory_data';
 
-// --- ✅ تم إعداد الاتصال بقاعدة بيانات Supabase الجديدة ---
+// --- ✅ تم إعداد الاتصال بقاعدة بيانات Supabase ---
 const supabaseUrl = 'https://aqbpbptnfhbwlzuprbns.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxYnBicHRuZmhid2x6dXByYm5zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1NDY0ODQsImV4cCI6MjA3NTEyMjQ4NH0.wwzhmTQvzBl1kp2hOnex1kLyoKpmsolC-oSpuk_K8x8';
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -58,7 +58,7 @@ interface UseInventoryDataReturn {
   updateLocalNote: (vfid: string, note: string) => void;
   updateLocalChecked: (vfid: string, checked: boolean) => void;
   loadData: () => Promise<void>;
-  uploadFile: (file: File) => Promise<void>; // Note: File upload needs a different setup with Supabase Storage
+  uploadFile: (file: File) => Promise<void>; 
 }
 
 
@@ -82,14 +82,15 @@ export const useInventoryData = (): UseInventoryDataReturn => {
 
   const hideToast = () => setShowToast(false);
   
-  // --- ✅ دالة جلب البيانات الجديدة باستخدام Supabase ---
+  // --- دالة جلب البيانات الجديدة باستخدام Supabase ---
   const loadData = async () => {
     setLoading(true);
     setError(null);
     try {
+      // --- ✅ تم تصحيح اسم الجدول هنا ---
       const { data: inventoryData, error: dbError } = await supabase
-        .from('inventory') // اسم الجدول
-        .select('*');     // جلب كل الأعمدة
+        .from('Picklist') // <-- تم التغيير من 'inventory' إلى 'Picklist'
+        .select('*');
 
       if (dbError) {
         throw new Error(dbError.message);
@@ -107,58 +108,52 @@ export const useInventoryData = (): UseInventoryDataReturn => {
     }
   };
 
-  // --- ✅ دالة تحديث الملاحظات الجديدة باستخدام Supabase ---
+  // --- دالة تحديث الملاحظات الجديدة باستخدام Supabase ---
   const updateLocalNote = async (vfid: string, note: string) => {
-    // 1. تحديث الواجهة فوراً لتجربة مستخدم سريعة
     setData(prev => {
       const newData = prev.map(item => item.VFID === vfid ? { ...item, Notes: note } : item);
       saveToStorage(newData);
       return newData;
     });
 
-    // 2. إرسال التحديث إلى قاعدة البيانات
+    // --- ✅ تم تصحيح اسم الجدول هنا ---
     const { error: dbError } = await supabase
-      .from('inventory')
+      .from('Picklist') // <-- تم التغيير
       .update({ Notes: note })
       .eq('VFID', vfid);
 
     if (dbError) {
       showNotification(`❌ فشل حفظ الملاحظة: ${dbError.message}`);
-      // يمكنك إعادة تحميل البيانات لإلغاء التغيير المحلي عند الفشل
       loadData(); 
     } else {
       showNotification(`✅ تم حفظ الملاحظة.`);
     }
   };
 
-  // --- ✅ دالة تحديث خانة الاختيار الجديدة باستخدام Supabase ---
+  // --- دالة تحديث خانة الاختيار الجديدة باستخدام Supabase ---
   const updateLocalChecked = async (vfid: string, checked: boolean) => {
-    // 1. تحديث الواجهة فوراً
     setData(prev => {
       const newData = prev.map(item => item.VFID === vfid ? { ...item, Checked: checked } : item);
       saveToStorage(newData);
       return newData;
     });
 
-    // 2. إرسال التحديث إلى قاعدة البيانات
+    // --- ✅ تم تصحيح اسم الجدول هنا ---
     const { error: dbError } = await supabase
-      .from('inventory')
+      .from('Picklist') // <-- تم التغيير
       .update({ Checked: checked })
       .eq('VFID', vfid);
 
     if (dbError) {
       showNotification(`❌ فشل حفظ التحديث: ${dbError.message}`);
-      loadData(); // إعادة تحميل البيانات عند الفشل
+      loadData(); 
     } else {
       showNotification(`✅ تم حفظ التحديث.`);
     }
   };
 
-  // دالة رفع الملفات (ملاحظة: تحتاج لإعداد Supabase Storage لاحقاً)
   const uploadFile = async (file: File) => {
     showNotification("⚠️ وظيفة رفع الملفات لم يتم إعدادها بعد مع Supabase.");
-    // This requires setting up Supabase Storage, which is a separate step.
-    // For now, it will just show a warning.
     return Promise.resolve();
   };
 
