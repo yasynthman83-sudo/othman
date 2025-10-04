@@ -1,30 +1,82 @@
 import React from 'react';
-import { useState, useRef } from 'react';
-import { Package, MapPin, Warehouse, Loader2, RotateCcw, Download, ShoppingCart, Upload } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Package, MapPin, Warehouse, Loader2, RotateCcw, Download, ShoppingCart, Upload, ArrowLeft } from 'lucide-react';
 import FilterButton from '../components/FilterButton';
-import Toast from '../components/Toast';
 import GlobalDashboard from '../components/GlobalDashboard';
 import QuantitySummary from '../components/QuantitySummary';
 import GlobalNotesTable from '../components/GlobalNotesTable';
+import InventoryTable from '../components/InventoryTable';
+import LocationFilter from '../components/LocationFilter';
+import SearchBar from '../components/SearchBar';
+import StatisticsBar from '../components/StatisticsBar';
 import { filterInventoryData } from '../utils/filterUtils';
+import { searchInventoryData } from '../utils/filterUtils';
 import * as XLSX from 'xlsx';
 import { useInventoryData } from '../hooks/useInventoryData';
 
 export default function HomePage() {
-  const { data, loading, error, showToast, toastMessage, hideToast, refetch, loadData, uploadFile } = useInventoryData();
+  const { data, loading, error, refetch, loadData, uploadFile, updateLocalNote, updateLocalChecked } = useInventoryData();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showLocationFilter, setShowLocationFilter] = useState(false);
   
   const a1a6Count = filterInventoryData(data, 'A1-A6').length;
   const a7a12Count = filterInventoryData(data, 'A7-A12').length;
   const bagCount = filterInventoryData(data, 'B-AG').length;
   const remainingCount = data.filter(item => !item.Checked).length;
   
-  // Calculate total quantity for current view
-  const totalQuantity = data.reduce((sum, item) => sum + (item.Quantity || 0), 0);
   const totalOrdersCount = data.reduce((sum, item) => sum + (item.OrdersCount || 0), 0);
 
+  // Filter data based on selected locations
+  const getFilteredData = () => {
+    if (selectedLocations.length === 0) {
+      return data;
+    }
+    
+    return data.filter(item => {
+      const location = item.Location?.trim();
+      if (!location) return false;
+      
+      const upperLocation = location.toUpperCase();
+      
+      return selectedLocations.some(baseLocation => {
+        const upperBase = baseLocation.toUpperCase();
+        
+        if (upperBase.startsWith('A')) {
+          const baseNum = upperBase.substring(1);
+          return upperLocation.startsWith(`A${baseNum}`);
+        } else if (upperBase.startsWith('B')) {
+          if (upperBase === 'B') {
+            return upperLocation.startsWith('B');
+          } else {
+            const baseNum = upperBase.substring(1);
+            return upperLocation.startsWith(`B${baseNum}`);
+          }
+        } else if (upperBase === 'AG') {
+          return upperLocation.startsWith('AG');
+        }
+        
+        return false;
+      });
+    });
+  };
+
+  const filteredData = getFilteredData();
+  const searchedData = searchInventoryData(filteredData, searchTerm);
+
+  const handleLocationFilter = (locations: string[]) => {
+    setSelectedLocations(locations);
+    setShowLocationFilter(false);
+  };
+
+  const handleClearLocationFilter = () => {
+    setSelectedLocations([]);
+    setSearchTerm('');
+  };
+
   const downloadNotesAsExcel = () => {
-    const itemsWithNotes = data.filter(item => item.Notes && item.Notes.trim() !== '');
+    const itemsWithNotes = filteredData.filter(item => item.Notes && item.Notes.trim() !== '');
     
     if (itemsWithNotes.length === 0) {
       alert('No notes found to download');
@@ -109,14 +161,56 @@ export default function HomePage() {
     );
   }
 
+  // Show location-filtered view
+  if (selectedLocations.length > 0) {
+    const checkedCount = searchedData.filter(item => item.Checked).length;
+    const totalCount = searchedData.length;
+    const remainingCount = totalCount - checkedCount;
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-fedshi-purple/10 font-inter">
+        <div className="bg-white/90 backdrop-blur-sm shadow-lg border-b border-gray-200">
+          <div className="px-4 sm:px-6 py-6 sm:py-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 sm:space-x-4">
+                <button
+                  onClick={handleClearLocationFilter}
+                  className="flex items-center space-x-1 sm:space-x-2 text-gray-600 hover:text-fedshi-purple transition-all duration-200 hover:bg-fedshi-purple/5 px-2 sm:px-3 py-2 rounded-xl"
+                >
+                  <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span className="font-semibold text-sm sm:text-lg hidden sm:inline">Back to Dashboard</span>
+                  <span className="font-semibold text-sm sm:hidden">Back</span>
+                </button>
+                <div className="h-6 sm:h-8 w-px bg-gray-300"></div>
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <MapPin className="w-5 h-5 sm:w-6 sm:h-6 text-fedshi-purple" />
+                  <h1 className="text-lg sm:text-3xl font-bold text-gray-900">
+                    Selected Locations: {selectedLocations.join(', ')}
+                  </h1>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-4 sm:px-6 py-6 sm:py-8">
+          <StatisticsBar checkedCount={checkedCount} totalCount={totalCount} remainingCount={remainingCount} />
+          <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} />
+          <InventoryTable 
+            data={searchedData} 
+            loading={loading} 
+            error={error} 
+            onLocalNoteUpdate={updateLocalNote}
+            onLocalCheckedUpdate={updateLocalChecked}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Show main dashboard
   return (
     <>
-      <Toast 
-        message={toastMessage}
-        isVisible={showToast}
-        onClose={hideToast}
-      />
-      
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-fedshi-purple/10 font-inter">
         <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-16">
           {/* Header */}
@@ -140,38 +234,22 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Load Data Button */}
-          <div className="text-center mb-8 sm:mb-12 space-y-4">
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button
-                onClick={loadData}
-                disabled={loading}
-                className="inline-flex items-center space-x-2 sm:space-x-3 px-6 sm:px-8 py-3 sm:py-4 bg-fedshi-purple text-white font-semibold rounded-xl hover:bg-fedshi-purple-dark transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
-                ) : (
-                  <Download className="w-4 h-4 sm:w-5 sm:h-5" />
-                )}
-                <span className="text-sm sm:text-base">
-                  {loading ? 'Loading...' : 'Load Data'}
-                </span>
-              </button>
-              
+          {/* Upload File Button */}
+          <div className="text-center mb-8 sm:mb-12">
+            <div className="flex items-center justify-center">
               <button
                 onClick={handleFileUpload}
                 disabled={loading}
-                className="inline-flex items-center space-x-2 sm:space-x-3 px-6 sm:px-8 py-3 sm:py-4 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px]"
+                className="p-3 bg-green-600 text-white rounded-full hover:bg-green-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Upload File"
               >
-                <Upload className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span className="text-sm sm:text-base">Upload File</span>
+                <Upload className="w-5 h-5" />
               </button>
             </div>
             
-            <div className="text-xs sm:text-sm text-gray-600 space-y-1">
-              <div className="text-xs sm:text-sm text-gray-600 space-y-1">
-                <p><strong>Auto-refresh:</strong> Data refreshes automatically every 10 seconds</p>
-                <p><strong>Upload:</strong> Click the upload button to update data with Excel/CSV file</p>
+            <div className="text-xs sm:text-sm text-gray-600 space-y-1 mt-4">
+              <p><strong>Auto-refresh:</strong> Data refreshes automatically every 10 seconds</p>
+              <p><strong>Upload:</strong> Click the upload button to update data with Excel/CSV file</p>
                 {error && (
                   <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
                     <p className="text-red-700 text-sm font-medium">Connection Issue:</p>
@@ -181,7 +259,6 @@ export default function HomePage() {
                     </p>
                   </div>
                 )}
-              </div>
             </div>
             
             {/* Hidden file input */}
@@ -242,7 +319,7 @@ export default function HomePage() {
               icon={<MapPin className="w-6 h-6 text-purple-600" />}
               itemCount={data.length}
               isSpecial={true}
-              specialRoute="/location-filter"
+              onClick={() => setShowLocationFilter(true)}
             />
             
             <FilterButton
@@ -270,6 +347,16 @@ export default function HomePage() {
 
           {/* Global Notes Table */}
           <GlobalNotesTable data={data} />
+
+          {/* Location Filter Modal */}
+          {showLocationFilter && (
+            <LocationFilter 
+              data={data} 
+              selectedLocations={selectedLocations}
+              onLocationFilter={handleLocationFilter}
+              onClose={() => setShowLocationFilter(false)}
+            />
+          )}
         </div>
       </div>
     </>

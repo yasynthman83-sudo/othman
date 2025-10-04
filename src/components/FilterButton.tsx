@@ -10,6 +10,7 @@ interface FilterButtonProps {
   itemCount: number;
   isSpecial?: boolean;
   specialRoute?: string;
+  onClick?: () => void;
 }
 
 const FilterButton: React.FC<FilterButtonProps> = ({ 
@@ -20,11 +21,14 @@ const FilterButton: React.FC<FilterButtonProps> = ({
   itemCount,
   isSpecial = false,
   specialRoute
+  onClick
 }) => {
   const navigate = useNavigate();
 
   const handleClick = () => {
-    if (isSpecial && specialRoute) {
+    if (onClick) {
+      onClick();
+    } else if (isSpecial && specialRoute) {
       navigate(specialRoute);
     } else {
       navigate(`/inventory/${filterType}`);

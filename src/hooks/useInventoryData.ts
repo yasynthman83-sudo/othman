@@ -53,9 +53,6 @@ interface UseInventoryDataReturn {
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
-  showToast: boolean;
-  toastMessage: string;
-  hideToast: () => void;
   updateLocalNote: (vfid: string, note: string) => void;
   updateLocalChecked: (vfid: string, checked: boolean) => void;
   loadData: () => Promise<void>;
@@ -67,8 +64,6 @@ export const useInventoryData = (): UseInventoryDataReturn => {
   const [data, setData] = useState<InventoryItem[]>(() => loadFromStorage());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   useEffect(() => {
@@ -85,13 +80,6 @@ export const useInventoryData = (): UseInventoryDataReturn => {
     return () => clearInterval(interval);
   }, []);
   
-  const showNotification = (message: string) => {
-    setToastMessage(message);
-    setShowToast(true);
-  };
-
-  const hideToast = () => setShowToast(false);
-  
   const loadData = async () => {
     setLoading(true);
     setError(null);
@@ -105,15 +93,11 @@ export const useInventoryData = (): UseInventoryDataReturn => {
       setData(inventoryData || []);
       saveToStorage(inventoryData || []);
       if (isInitialLoad) {
-        showNotification(`✅ تم تحميل ${inventoryData?.length || 0} عنصراً بنجاح.`);
         setIsInitialLoad(false);
       }
       
     } catch (err: any) {
       setError(err.message);
-      if (isInitialLoad) {
-        showNotification(`❌ خطأ في تحميل البيانات: ${err.message}`);
-      }
     } finally {
       setLoading(false);
     }
@@ -149,10 +133,8 @@ export const useInventoryData = (): UseInventoryDataReturn => {
       .eq('VFID', vfid);
 
     if (dbError) {
-      showNotification(`❌ فشل حفظ الملاحظة: ${dbError.message}`);
+      console.error('Failed to save note:', dbError.message);
       loadData(); 
-    } else {
-      showNotification(`✅ تم حفظ الملاحظة.`);
     }
   };
 
@@ -169,10 +151,8 @@ export const useInventoryData = (): UseInventoryDataReturn => {
       .eq('VFID', vfid);
 
     if (dbError) {
-      showNotification(`❌ فشل حفظ التحديث: ${dbError.message}`);
+      console.error('Failed to save update:', dbError.message);
       loadData(); 
-    } else {
-      showNotification(`✅ تم حفظ التحديث.`);
     }
   };
 
@@ -180,7 +160,6 @@ export const useInventoryData = (): UseInventoryDataReturn => {
   const uploadFile = async (file: File) => {
     setLoading(true);
     setError(null);
-    showNotification("🔄 جاري معالجة الملف...");
     
     try {
       const reader = new FileReader();
@@ -211,7 +190,6 @@ export const useInventoryData = (): UseInventoryDataReturn => {
           }));
 
           // 1. حذف كل البيانات القديمة من الجدول
-          showNotification("⏳ جاري حذف البيانات القديمة...");
           const { error: deleteError } = await supabase
             .from('Picklist')
             .delete()
@@ -220,26 +198,24 @@ export const useInventoryData = (): UseInventoryDataReturn => {
           if (deleteError) throw new Error(deleteError.message);
 
           // 2. إضافة البيانات الجديدة
-          showNotification("⏳ جاري إضافة البيانات الجديدة...");
           const { error: insertError } = await supabase
             .from('Picklist')
             .insert(dataToInsert);
 
           if (insertError) throw new Error(insertError.message);
 
-          showNotification(`✅ تم رفع ومعالجة ${dataToInsert.length} عنصراً بنجاح!`);
           await loadData(); // إعادة تحميل البيانات الجديدة
 
         } catch (procError: any) {
           setError(procError.message);
-          showNotification(`❌ فشل في معالجة الملف: ${procError.message}`);
+          console.error('File processing failed:', procError.message);
           setLoading(false);
         }
       };
       reader.readAsBinaryString(file);
     } catch (err: any) {
       setError(err.message);
-      showNotification(`❌ خطأ في قراءة الملف: ${err.message}`);
+      console.error('File reading failed:', err.message);
       setLoading(false);
     }
   };
@@ -247,7 +223,6 @@ export const useInventoryData = (): UseInventoryDataReturn => {
   const refetch = () => loadData();
 
   return { 
-    data, loading, error, refetch, showToast, toastMessage, hideToast,
-    updateLocalNote, updateLocalChecked, loadData, uploadFile
+    data, loading, error, refetch, updateLocalNote, updateLocalChecked, loadData, uploadFile
   };
 };
