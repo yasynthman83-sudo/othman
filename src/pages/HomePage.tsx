@@ -43,18 +43,25 @@ export default function HomePage() {
       return selectedLocations.some(baseLocation => {
         const upperBase = baseLocation.toUpperCase();
         
+        // Use precise matching with regex to avoid A1 matching A10, A11, etc.
         if (upperBase.startsWith('A')) {
           const baseNum = upperBase.substring(1);
-          return upperLocation.startsWith(`A${baseNum}`);
+          // Match A{num} followed by non-digit or end of string
+          const regex = new RegExp(`^A${baseNum}(?!\\d)`);
+          return regex.test(upperLocation);
         } else if (upperBase.startsWith('B')) {
           if (upperBase === 'B') {
-            return upperLocation.startsWith('B');
+            // Match B followed by non-digit or end of string
+            return /^B(?!\d)/.test(upperLocation);
           } else {
             const baseNum = upperBase.substring(1);
-            return upperLocation.startsWith(`B${baseNum}`);
+            // Match B{num} followed by non-digit or end of string
+            const regex = new RegExp(`^B${baseNum}(?!\\d)`);
+            return regex.test(upperLocation);
           }
         } else if (upperBase === 'AG') {
-          return upperLocation.startsWith('AG');
+          // Match AG followed by non-letter or end of string
+          return /^AG(?![A-Z])/.test(upperLocation);
         }
         
         return false;
