@@ -191,7 +191,6 @@ export default function HomePage() {
               onChange={handleFileChange}
               style={{ display: 'none' }}
             />
-          </div>
 
           {/* Total Orders Count Display */}
           <div className="bg-gradient-to-r from-fedshi-purple to-fedshi-purple-dark rounded-2xl shadow-2xl p-4 sm:p-6 mb-6 sm:mb-8 text-white text-center">
