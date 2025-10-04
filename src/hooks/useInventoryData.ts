@@ -1,11 +1,16 @@
 import { useState, useEffect } from 'react';
+import { createClient } from '@supabase/supabase-js';
 import { InventoryItem } from '../types/inventory';
 
 const STORAGE_KEY = 'inventory_data';
-// Updated Google Apps Script URL
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx-bV4_PKtbSxrQPOrI_fmghONYhH6hZI3JPA9LtjhSx0a11cWec2T67nJJZbTOW9VzJg/exec';
 
-// (بقية الدوال المساعدة تبقى كما هي)
+// --- ✅ تم إعداد الاتصال بقاعدة بيانات Supabase الجديدة ---
+const supabaseUrl = 'https://aqbpbptnfhbwlzuprbns.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxYnBicHRuZmhid2x6dXByYm5zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1NDY0ODQsImV4cCI6MjA3NTEyMjQ4NH0.wwzhmTQvzBl1kp2hOnex1kLyoKpmsolC-oSpuk_K8x8';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+
+// (الدوال المساعدة تبقى كما هي)
 const loadFromStorage = (): InventoryItem[] => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -41,21 +46,6 @@ const saveToStorage = (data: InventoryItem[]) => {
   }
 };
 
-const transformGoogleSheetsData = (rawData: any[]): InventoryItem[] => {
-  return rawData.map(item => ({
-    ProductName: String(item.ProductName || item['Product Name'] || ''),
-    Location: String(item.Location || ''),
-    VFID: String(item.VFID || item.VF_ID || item['VF ID'] || ''),
-    SkuNumber: String(item.SkuNumber || item['Sku Number'] || item.SKU || ''),
-    Notes: String(item.Notes || item.Note || ''),
-    Quantity: Number(item.Quantity) || 0,
-    OrdersCount: Number(item.OrdersCount || item['Orders Count'] || item.Orders || 0),
-    Checked: item.Checked === true || String(item.Checked).toUpperCase() === 'TRUE',
-    "1": Number(item["1"]) || 0,
-    "3": Number(item["3"]) || 0,
-  }));
-};
-
 
 interface UseInventoryDataReturn {
   data: InventoryItem[];
@@ -68,7 +58,7 @@ interface UseInventoryDataReturn {
   updateLocalNote: (vfid: string, note: string) => void;
   updateLocalChecked: (vfid: string, checked: boolean) => void;
   loadData: () => Promise<void>;
-  uploadFile: (file: File) => Promise<void>;
+  uploadFile: (file: File) => Promise<void>; // Note: File upload needs a different setup with Supabase Storage
 }
 
 
@@ -85,176 +75,97 @@ export const useInventoryData = (): UseInventoryDataReturn => {
     }
   }, []);
   
-  const playNotificationSound = () => {
-    try {
-      const audio = new Audio('/notification.mp3');
-      audio.volume = 0.5;
-      audio.play().catch(err => console.log('Could not play sound:', err));
-    } catch (err) {
-      console.log('Audio not available:', err);
-    }
-  };
-
   const showNotification = (message: string) => {
     setToastMessage(message);
     setShowToast(true);
-    playNotificationSound();
   };
 
   const hideToast = () => setShowToast(false);
-
-  // --- دالة إرسال التحديثات المعدلة ---
-  const updateGoogleSheets = async (payload: object) => {
-    try {
-      // Add timeout to prevent hanging requests
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
-
-      const response = await fetch(GOOGLE_SCRIPT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(payload),
-        mode: 'cors',
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      
-      // Check if response is ok before trying to parse JSON
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      const result = await response.json();
-
-      if (result.status === 'success') {
-        console.log('Update successful:', result.message);
-        showNotification(`✅ ${result.message}`); // أظهر رسالة نجاح
-      } else {
-        // إذا فشل الحفظ، أظهر رسالة الخطأ من السكربت
-        const errorMessage = result.message || 'Unknown error from server';
-        console.warn('Update failed:', errorMessage);
-        showNotification(`❌ ${errorMessage}`);
-      }
-    } catch (error) {
-      console.error('Error updating sheet:', error);
-      
-      if (error.name === 'AbortError') {
-        showNotification(`❌ Request timeout - please try again`);
-      } else if (error.message.includes('Failed to fetch')) {
-        showNotification(`❌ Network error: Cannot reach Google Apps Script. Check your connection and script deployment.`);
-      } else {
-        showNotification(`❌ Update failed: ${error.message}`);
-      }
-    }
-  };
-
-  // --- دالة تحديث الملاحظات المعدلة ---
-  const updateLocalNote = (vfid: string, note: string) => {
-    // 1. تحديث الواجهة فوراً
-    setData(prevData => {
-      const updatedData = prevData.map(item => 
-        item.VFID === vfid ? { ...item, Notes: note } : item
-      );
-      saveToStorage(updatedData);
-      return updatedData;
-    });
-    // 2. إرسال البيانات إلى السكربت
-    updateGoogleSheets({
-      action: 'updateNote',
-      VFID: vfid,
-      Note: note,
-    });
-  };
-
-  // --- دالة تحديث خانة الاختيار المعدلة ---
-  const updateLocalChecked = (vfid: string, checked: boolean) => {
-    // 1. تحديث الواجهة فوراً
-    setData(prevData => {
-      const updatedData = prevData.map(item => 
-        item.VFID === vfid ? { ...item, Checked: checked } : item
-      );
-      saveToStorage(updatedData);
-      return updatedData;
-    });
-    // 2. إرسال البيانات إلى السكربت
-    updateGoogleSheets({
-      action: 'updateChecked',
-      VFID: vfid,
-      Checked: checked,
-    });
-  };
   
+  // --- ✅ دالة جلب البيانات الجديدة باستخدام Supabase ---
   const loadData = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Use GET request for reading data
-      const response = await fetch(GOOGLE_SCRIPT_URL);
-      if (!response.ok) throw new Error('Failed to fetch data from the server.');
-      
-      const result = await response.json();
-      if (result.status !== 'success') throw new Error(result.message);
+      const { data: inventoryData, error: dbError } = await supabase
+        .from('inventory') // اسم الجدول
+        .select('*');     // جلب كل الأعمدة
 
-      const transformedData = transformGoogleSheetsData(result.data);
-      setData(transformedData);
-      saveToStorage(transformedData);
-      showNotification(`✅ Successfully loaded ${transformedData.length} items.`);
-      
-    } catch (err: any) {
-      setError(err.message);
-      showNotification(`❌ Error: ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-    const uploadFile = async (file: File) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
+      if (dbError) {
+        throw new Error(dbError.message);
+      }
 
-      const response = await fetch(GOOGLE_SCRIPT_URL, {
-        method: 'POST',
-        body: formData,
-        mode: 'cors'
-      });
-
-      if (!response.ok) throw new Error(`Upload failed!`);
-
-      const result = await response.json();
-      if (result.status !== 'success') throw new Error(result.message);
-
-      showNotification(`✅ File uploaded successfully!`);
-      await loadData();
+      setData(inventoryData || []);
+      saveToStorage(inventoryData || []);
+      showNotification(`✅ تم تحميل ${inventoryData?.length || 0} عنصراً بنجاح.`);
       
     } catch (err: any) {
       setError(err.message);
-      showNotification(`❌ Upload Error: ${err.message}`);
+      showNotification(`❌ خطأ في تحميل البيانات: ${err.message}`);
     } finally {
       setLoading(false);
     }
   };
 
+  // --- ✅ دالة تحديث الملاحظات الجديدة باستخدام Supabase ---
+  const updateLocalNote = async (vfid: string, note: string) => {
+    // 1. تحديث الواجهة فوراً لتجربة مستخدم سريعة
+    setData(prev => {
+      const newData = prev.map(item => item.VFID === vfid ? { ...item, Notes: note } : item);
+      saveToStorage(newData);
+      return newData;
+    });
+
+    // 2. إرسال التحديث إلى قاعدة البيانات
+    const { error: dbError } = await supabase
+      .from('inventory')
+      .update({ Notes: note })
+      .eq('VFID', vfid);
+
+    if (dbError) {
+      showNotification(`❌ فشل حفظ الملاحظة: ${dbError.message}`);
+      // يمكنك إعادة تحميل البيانات لإلغاء التغيير المحلي عند الفشل
+      loadData(); 
+    } else {
+      showNotification(`✅ تم حفظ الملاحظة.`);
+    }
+  };
+
+  // --- ✅ دالة تحديث خانة الاختيار الجديدة باستخدام Supabase ---
+  const updateLocalChecked = async (vfid: string, checked: boolean) => {
+    // 1. تحديث الواجهة فوراً
+    setData(prev => {
+      const newData = prev.map(item => item.VFID === vfid ? { ...item, Checked: checked } : item);
+      saveToStorage(newData);
+      return newData;
+    });
+
+    // 2. إرسال التحديث إلى قاعدة البيانات
+    const { error: dbError } = await supabase
+      .from('inventory')
+      .update({ Checked: checked })
+      .eq('VFID', vfid);
+
+    if (dbError) {
+      showNotification(`❌ فشل حفظ التحديث: ${dbError.message}`);
+      loadData(); // إعادة تحميل البيانات عند الفشل
+    } else {
+      showNotification(`✅ تم حفظ التحديث.`);
+    }
+  };
+
+  // دالة رفع الملفات (ملاحظة: تحتاج لإعداد Supabase Storage لاحقاً)
+  const uploadFile = async (file: File) => {
+    showNotification("⚠️ وظيفة رفع الملفات لم يتم إعدادها بعد مع Supabase.");
+    // This requires setting up Supabase Storage, which is a separate step.
+    // For now, it will just show a warning.
+    return Promise.resolve();
+  };
 
   const refetch = () => loadData();
 
   return { 
-    data, 
-    loading, 
-    error, 
-    refetch, 
-    showToast, 
-    toastMessage, 
-    hideToast,
-    updateLocalNote,
-    updateLocalChecked,
-    loadData,
-    uploadFile
+    data, loading, error, refetch, showToast, toastMessage, hideToast,
+    updateLocalNote, updateLocalChecked, loadData, uploadFile
   };
 };
