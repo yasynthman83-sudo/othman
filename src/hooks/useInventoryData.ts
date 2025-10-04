@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { InventoryItem } from '../types/inventory';
+import * as XLSX from 'xlsx'; // --- ✅ استيراد مكتبة معالجة ملفات Excel/CSV ---
 
 const STORAGE_KEY = 'inventory_data';
 
-// --- ✅ تم إعداد الاتصال بقاعدة بيانات Supabase ---
+// --- إعداد الاتصال بقاعدة بيانات Supabase ---
 const supabaseUrl = 'https://aqbpbptnfhbwlzuprbns.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxYnBicHRuZmhid2x6dXByYm5zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1NDY0ODQsImV4cCI6MjA3NTEyMjQ4NH0.wwzhmTQvzBl1kp2hOnex1kLyoKpmsolC-oSpuk_K8x8';
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -82,19 +83,15 @@ export const useInventoryData = (): UseInventoryDataReturn => {
 
   const hideToast = () => setShowToast(false);
   
-  // --- دالة جلب البيانات الجديدة باستخدام Supabase ---
   const loadData = async () => {
     setLoading(true);
     setError(null);
     try {
-      // --- ✅ تم تصحيح اسم الجدول هنا ---
       const { data: inventoryData, error: dbError } = await supabase
-        .from('Picklist') // <-- تم التغيير من 'inventory' إلى 'Picklist'
+        .from('Picklist')
         .select('*');
 
-      if (dbError) {
-        throw new Error(dbError.message);
-      }
+      if (dbError) throw new Error(dbError.message);
 
       setData(inventoryData || []);
       saveToStorage(inventoryData || []);
@@ -108,7 +105,6 @@ export const useInventoryData = (): UseInventoryDataReturn => {
     }
   };
 
-  // --- دالة تحديث الملاحظات الجديدة باستخدام Supabase ---
   const updateLocalNote = async (vfid: string, note: string) => {
     setData(prev => {
       const newData = prev.map(item => item.VFID === vfid ? { ...item, Notes: note } : item);
@@ -116,9 +112,8 @@ export const useInventoryData = (): UseInventoryDataReturn => {
       return newData;
     });
 
-    // --- ✅ تم تصحيح اسم الجدول هنا ---
     const { error: dbError } = await supabase
-      .from('Picklist') // <-- تم التغيير
+      .from('Picklist')
       .update({ Notes: note })
       .eq('VFID', vfid);
 
@@ -130,7 +125,6 @@ export const useInventoryData = (): UseInventoryDataReturn => {
     }
   };
 
-  // --- دالة تحديث خانة الاختيار الجديدة باستخدام Supabase ---
   const updateLocalChecked = async (vfid: string, checked: boolean) => {
     setData(prev => {
       const newData = prev.map(item => item.VFID === vfid ? { ...item, Checked: checked } : item);
@@ -138,9 +132,8 @@ export const useInventoryData = (): UseInventoryDataReturn => {
       return newData;
     });
 
-    // --- ✅ تم تصحيح اسم الجدول هنا ---
     const { error: dbError } = await supabase
-      .from('Picklist') // <-- تم التغيير
+      .from('Picklist')
       .update({ Checked: checked })
       .eq('VFID', vfid);
 
@@ -152,9 +145,72 @@ export const useInventoryData = (): UseInventoryDataReturn => {
     }
   };
 
+  // --- ✅ دالة رفع الملفات الجديدة والكاملة ---
   const uploadFile = async (file: File) => {
-    showNotification("⚠️ وظيفة رفع الملفات لم يتم إعدادها بعد مع Supabase.");
-    return Promise.resolve();
+    setLoading(true);
+    setError(null);
+    showNotification("🔄 جاري معالجة الملف...");
+    
+    try {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const binaryStr = event.target?.result;
+          const workbook = XLSX.read(binaryStr, { type: 'binary' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet);
+
+          if (jsonData.length === 0) {
+            throw new Error("الملف فارغ أو بصيغة غير صحيحة.");
+          }
+
+          // تحضير البيانات لإدخالها في قاعدة البيانات
+          const dataToInsert = jsonData.map(row => ({
+            ProductName: row['Product Name'] || row.ProductName,
+            Location: row.Location,
+            VFID: row.VFID,
+            SkuNumber: row['Sku Number'] || row.SkuNumber,
+            Quantity: row.Quantity,
+            OrdersCount: row['Orders Count'] || row.OrdersCount,
+            Checked: false, // القيمة الافتراضية عند الرفع
+            Notes: '', // القيمة الافتراضية
+            '1': row['1'],
+            '3': row['3'],
+          }));
+
+          // 1. حذف كل البيانات القديمة من الجدول
+          showNotification("⏳ جاري حذف البيانات القديمة...");
+          const { error: deleteError } = await supabase
+            .from('Picklist')
+            .delete()
+            .neq('id', 0); // شرط لحذف كل الصفوف
+
+          if (deleteError) throw new Error(deleteError.message);
+
+          // 2. إضافة البيانات الجديدة
+          showNotification("⏳ جاري إضافة البيانات الجديدة...");
+          const { error: insertError } = await supabase
+            .from('Picklist')
+            .insert(dataToInsert);
+
+          if (insertError) throw new Error(insertError.message);
+
+          showNotification(`✅ تم رفع ومعالجة ${dataToInsert.length} عنصراً بنجاح!`);
+          await loadData(); // إعادة تحميل البيانات الجديدة
+
+        } catch (procError: any) {
+          setError(procError.message);
+          showNotification(`❌ فشل في معالجة الملف: ${procError.message}`);
+          setLoading(false);
+        }
+      };
+      reader.readAsBinaryString(file);
+    } catch (err: any) {
+      setError(err.message);
+      showNotification(`❌ خطأ في قراءة الملف: ${err.message}`);
+      setLoading(false);
+    }
   };
 
   const refetch = () => loadData();
