@@ -28,46 +28,50 @@ export default function HomePage() {
   
   const totalOrdersCount = data.reduce((sum, item) => sum + (item.OrdersCount || 0), 0);
 
-  // Filter data based on selected locations
-  const getFilteredData = () => {
-    if (selectedLocations.length === 0) {
-      return data;
-    }
-    
-    return data.filter(item => {
-      const location = item.Location?.trim();
-      if (!location) return false;
-      
-      const upperLocation = location.toUpperCase();
-      
-      return selectedLocations.some(baseLocation => {
-        const upperBase = baseLocation.toUpperCase();
-        
-        // Use precise matching with regex to avoid A1 matching A10, A11, etc.
-        if (upperBase.startsWith('A')) {
+ // ✅ Precise filtering - fixed A1 matching A10 bug
+const getFilteredData = () => {
+  if (selectedLocations.length === 0) {
+    return data;
+  }
+
+  return data.filter(item => {
+    const location = item.Location?.trim();
+    if (!location) return false;
+
+    const upperLocation = location.toUpperCase();
+
+    return selectedLocations.some(baseLocation => {
+      const upperBase = baseLocation.toUpperCase();
+
+      // ✅ A-locations (e.g. A1, A2...)
+      if (upperBase.startsWith('A')) {
+        const baseNum = upperBase.substring(1);
+        // match A{num} followed by non-digit or end of string
+        const regex = new RegExp(`^A${baseNum}(?!\\d)`, 'i');
+        return regex.test(upperLocation);
+      }
+
+      // ✅ B-locations (B, B1, B2...)
+      if (upperBase.startsWith('B')) {
+        if (upperBase === 'B') {
+          return /^B(?!\d)/i.test(upperLocation);
+        } else {
           const baseNum = upperBase.substring(1);
-          // Match A{num} followed by non-digit or end of string
-          const regex = new RegExp(`^A${baseNum}(?!\\d)`);
+          const regex = new RegExp(`^B${baseNum}(?!\\d)`, 'i');
           return regex.test(upperLocation);
-        } else if (upperBase.startsWith('B')) {
-          if (upperBase === 'B') {
-            // Match B followed by non-digit or end of string
-            return /^B(?!\d)/.test(upperLocation);
-          } else {
-            const baseNum = upperBase.substring(1);
-            // Match B{num} followed by non-digit or end of string
-            const regex = new RegExp(`^B${baseNum}(?!\\d)`);
-            return regex.test(upperLocation);
-          }
-        } else if (upperBase === 'AG') {
-          // Match AG followed by non-letter or end of string
-          return /^AG(?![A-Z])/.test(upperLocation);
         }
-        
-        return false;
-      });
+      }
+
+      // ✅ AG locations (exact match only)
+      if (upperBase === 'AG') {
+        return /^AG(?![A-Z])/i.test(upperLocation);
+      }
+
+      return false;
     });
-  };
+  });
+};
+
 
   const filteredData = getFilteredData();
   const searchedData = searchInventoryData(filteredData, searchTerm);
