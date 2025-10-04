@@ -141,23 +141,43 @@ export default function HomePage() {
           </div>
 
           {/* Load Data Button */}
-          <div className="text-center mb-8 sm:mb-12 space-y-4 flex justify-center">
-            <button
-              onClick={handleFileUpload}
-              disabled={loading}
-              className="w-12 h-12 bg-green-600 text-white rounded-full hover:bg-green-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-              title="Upload File"
-            >
-              <Upload className="w-5 h-5" />
-            </button>
+          <div className="text-center mb-8 sm:mb-12 space-y-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <button
+                onClick={loadData}
+                disabled={loading}
+                className="inline-flex items-center space-x-2 sm:space-x-3 px-6 sm:px-8 py-3 sm:py-4 bg-fedshi-purple text-white font-semibold rounded-xl hover:bg-fedshi-purple-dark transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+                )}
+                <span className="text-sm sm:text-base">
+                  {loading ? 'Loading...' : 'Load Data'}
+                </span>
+              </button>
+              
+              <button
+                onClick={handleFileUpload}
+                disabled={loading}
+                className="inline-flex items-center space-x-2 sm:space-x-3 px-6 sm:px-8 py-3 sm:py-4 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px]"
+              >
+                <Upload className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="text-sm sm:text-base">Upload File</span>
+              </button>
+            </div>
             
-            
+            <div className="text-xs sm:text-sm text-gray-600 space-y-1">
+             <div className="text-xs sm:text-sm text-gray-600 space-y-1">
+              <p><strong>Auto-refresh:</strong> Data refreshes automatically every 10 seconds</p>
+              <p><strong>Upload:</strong> Click the upload button to update data with Excel/CSV file</p>
               {error && (
                 <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
                   <p className="text-red-700 text-sm font-medium">Connection Issue:</p>
                   <p className="text-red-600 text-xs mt-1">{error}</p>
                   <p className="text-red-500 text-xs mt-2">
-                    <strong>Troubleshooting:</strong> Check your database connection and try uploading a file to refresh data.
+                    <strong>Troubleshooting:</strong> Ensure the Google Apps Script is deployed as a web app with "Anyone" access permissions.
                   </p>
                 </div>
               )}
