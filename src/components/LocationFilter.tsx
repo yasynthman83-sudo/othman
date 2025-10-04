@@ -26,21 +26,21 @@ const LocationFilter: React.FC<LocationFilterProps> = ({
     allLocations.forEach(location => {
       const upperLocation = location.toUpperCase();
       
-      // Match patterns like A1, A2, etc. (not A10, A11)
-      const aMatch = upperLocation.match(/^A(\d+)(?![0-9])/);
+      // Match A followed by digits to get base location (e.g., A4R1 -> A4, A10L1 -> A10)
+      const aMatch = upperLocation.match(/^A(\d+)/);
       if (aMatch) {
         baseLocations.add(`A${aMatch[1]}`);
         return;
       }
       
-      // Match B locations
+      // Match B followed by optional digits (e.g., B5R1 -> B5, B -> B)
       const bMatch = upperLocation.match(/^B(\d*)/);
       if (bMatch) {
         baseLocations.add(bMatch[1] ? `B${bMatch[1]}` : 'B');
         return;
       }
       
-      // Match AG locations
+      // Match AG locations (e.g., AG-001 -> AG)
       if (upperLocation.startsWith('AG')) {
         baseLocations.add('AG');
         return;
@@ -48,7 +48,7 @@ const LocationFilter: React.FC<LocationFilterProps> = ({
     });
 
     return Array.from(baseLocations).sort((a, b) => {
-      // Sort A1, A2, ... A9, then B locations, then AG
+      // Sort numerically: A1, A2, A10, A11, then B locations, then AG
       const aMatchA = a.match(/^A(\d+)/);
       const aMatchB = b.match(/^A(\d+)/);
       
@@ -57,6 +57,14 @@ const LocationFilter: React.FC<LocationFilterProps> = ({
       }
       if (aMatchA && !aMatchB) return -1;
       if (!aMatchA && aMatchB) return 1;
+      
+      // For B locations, sort numerically too
+      const bMatchA = a.match(/^B(\d+)/);
+      const bMatchB = b.match(/^B(\d+)/);
+      
+      if (bMatchA && bMatchB) {
+        return parseInt(bMatchA[1]) - parseInt(bMatchB[1]);
+      }
       
       return a.localeCompare(b);
     });
@@ -81,7 +89,7 @@ const LocationFilter: React.FC<LocationFilterProps> = ({
   };
 
   const handleApplyFilter = () => {
-    // Convert base locations to actual location matches
+    // Filter items based on selected base locations
     const matchingLocations: string[] = [];
     
     if (tempSelectedLocations.length === 0) {
@@ -97,14 +105,13 @@ const LocationFilter: React.FC<LocationFilterProps> = ({
           const upperBase = baseLocation.toUpperCase();
           
           if (upperBase.startsWith('A')) {
-            // Precise matching for A locations
+            // Match A locations: A4 should match A4, A4R1, A4L2, etc.
             const baseNum = upperBase.substring(1);
-            const regex = new RegExp(`^A${baseNum}(?![0-9])`, 'i');
-            if (regex.test(upperLocation)) {
+            if (upperLocation.startsWith(`A${baseNum}`)) {
               matchingLocations.push(location);
             }
           } else if (upperBase.startsWith('B')) {
-            // B location matching
+            // Match B locations: B5 should match B5, B5R1, etc.
             if (upperBase === 'B') {
               if (upperLocation.startsWith('B')) {
                 matchingLocations.push(location);
@@ -116,7 +123,7 @@ const LocationFilter: React.FC<LocationFilterProps> = ({
               }
             }
           } else if (upperBase === 'AG') {
-            // AG location matching
+            // Match AG locations: AG should match AG, AG-001, etc.
             if (upperLocation.startsWith('AG')) {
               matchingLocations.push(location);
             }
@@ -220,11 +227,11 @@ const LocationFilter: React.FC<LocationFilterProps> = ({
               </div>
 
               {/* Base Locations Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-6">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 mb-6">
                 {uniqueBaseLocations.map(baseLocation => (
                   <label
                     key={baseLocation}
-                    className={`flex items-center space-x-2 p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                    className={`flex items-center justify-center space-x-2 p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
                       tempSelectedLocations.includes(baseLocation)
                         ? 'border-blue-500 bg-blue-50 shadow-sm'
                         : 'border-gray-200 bg-white hover:border-gray-300'
@@ -234,9 +241,9 @@ const LocationFilter: React.FC<LocationFilterProps> = ({
                       type="checkbox"
                       checked={tempSelectedLocations.includes(baseLocation)}
                       onChange={() => handleLocationToggle(baseLocation)}
-                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mr-2"
                     />
-                    <span className={`text-sm font-medium ${
+                    <span className={`text-sm font-bold ${
                       tempSelectedLocations.includes(baseLocation) ? 'text-blue-700' : 'text-gray-700'
                     }`}>
                       {baseLocation}

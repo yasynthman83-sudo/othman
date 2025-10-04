@@ -69,11 +69,20 @@ export const useInventoryData = (): UseInventoryDataReturn => {
   const [error, setError] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   useEffect(() => {
     if (data.length === 0) {
       loadData();
     }
+    
+    // Set up auto-refresh every 10 seconds
+    const interval = setInterval(() => {
+      loadDataSilently();
+    }, 10000);
+    
+    // Cleanup interval on unmount
+    return () => clearInterval(interval);
   }, []);
   
   const showNotification = (message: string) => {
@@ -95,16 +104,38 @@ export const useInventoryData = (): UseInventoryDataReturn => {
 
       setData(inventoryData || []);
       saveToStorage(inventoryData || []);
-      showNotification(`✅ تم تحميل ${inventoryData?.length || 0} عنصراً بنجاح.`);
+      if (isInitialLoad) {
+        showNotification(`✅ تم تحميل ${inventoryData?.length || 0} عنصراً بنجاح.`);
+        setIsInitialLoad(false);
+      }
       
     } catch (err: any) {
       setError(err.message);
-      showNotification(`❌ خطأ في تحميل البيانات: ${err.message}`);
+      if (isInitialLoad) {
+        showNotification(`❌ خطأ في تحميل البيانات: ${err.message}`);
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  // Silent data loading for auto-refresh (no loading indicators or notifications)
+  const loadDataSilently = async () => {
+    try {
+      const { data: inventoryData, error: dbError } = await supabase
+        .from('Picklist')
+        .select('*');
+
+      if (dbError) throw new Error(dbError.message);
+
+      setData(inventoryData || []);
+      saveToStorage(inventoryData || []);
+      
+    } catch (err: any) {
+      // Silent failure - don't show error notifications for auto-refresh
+      console.warn('Auto-refresh failed:', err.message);
+    }
+  };
   const updateLocalNote = async (vfid: string, note: string) => {
     setData(prev => {
       const newData = prev.map(item => item.VFID === vfid ? { ...item, Notes: note } : item);
