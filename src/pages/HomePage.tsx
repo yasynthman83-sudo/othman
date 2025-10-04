@@ -224,7 +224,7 @@ export default function HomePage() {
               Picklist APP
             </h1>
             <p className="text-sm sm:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed px-4">
-              Manage your inventory with real-time data from Google Sheets
+            
             </p>
             <div className="mt-4 sm:mt-6 inline-flex items-center px-3 sm:px-4 py-2 bg-green-100 rounded-full">
               <div className="w-3 h-3 bg-green-500 rounded-full mr-2 animate-pulse"></div>
