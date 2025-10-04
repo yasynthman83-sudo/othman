@@ -20,7 +20,7 @@ const FilterButton: React.FC<FilterButtonProps> = ({
   icon, 
   itemCount,
   isSpecial = false,
-  specialRoute
+  specialRoute,
   onClick
 }) => {
   const navigate = useNavigate();
