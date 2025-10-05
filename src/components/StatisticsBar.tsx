@@ -26,12 +26,12 @@ const StatisticsBar: React.FC<StatisticsBarProps> = ({
         </div>
         
         <div className="flex items-center space-x-3 sm:space-x-4">
-          <div className="p-2 sm:p-3 bg-fedshrim-purple/10 rounded-2xl">
-            <Package className="w-4 h-4 sm:w-5 sm:h-5 text-fedshrim-purple" />
+          <div className="p-2 sm:p-3 bg-fedshi-purple/10 rounded-2xl">
+            <Package className="w-4 h-4 sm:w-5 sm:h-5 text-fedshi-purple" />
           </div>
           <div>
             <p className="text-xs sm:text-sm font-medium text-gray-600 font-inter">Total Items</p>
-            <p className="text-lg sm:text-2xl font-bold text-fedshrim-purple font-inter">{totalCount}</p>
+            <p className="text-lg sm:text-2xl font-bold text-fedshi-purple font-inter">{totalCount}</p>
           </div>
         </div>
         
