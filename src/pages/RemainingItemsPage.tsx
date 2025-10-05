@@ -27,6 +27,7 @@ const RemainingItemsPage: React.FC = () => {
       <Toast message={toastMessage} isVisible={showToast} onClose={hideToast} />
       
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-fedshi-purple/10 font-inter">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-fedshrim-purple/10 font-inter">
         <div className="bg-white/90 backdrop-blur-sm shadow-lg border-b border-gray-200">
           <div className="px-4 sm:px-6 py-6 sm:py-8">
             <div className="flex items-center justify-between">
@@ -49,7 +50,7 @@ const RemainingItemsPage: React.FC = () => {
               <button
                 onClick={handleRefresh}
                 disabled={loading}
-                className="p-2 bg-fedshi-yellow text-fedshi-purple rounded-xl hover:bg-fedshi-yellow-dark transition-all duration-200"
+                className="p-2 bg-fedshrim-gold text-fedshrim-purple rounded-xl hover:bg-fedshrim-gold-dark transition-all duration-200"
                 title="Refresh Data"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}

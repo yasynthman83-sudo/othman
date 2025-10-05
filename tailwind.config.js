@@ -4,11 +4,13 @@ export default {
   theme: {
     extend: {
       colors: {
-        fedshi: {
-          purple: '#4B0082',
-          yellow: '#FFD700',
-          'purple-dark': '#3A0066',
-          'yellow-dark': '#E6C200',
+        fedshrim: {
+          purple: '#7B2D8E',
+          'purple-dark': '#5A1F66',
+          'purple-light': '#9B4BAE',
+          gold: '#F4C430',
+          'gold-dark': '#D4A017',
+          'gold-light': '#FFD700',
         }
       },
       fontFamily: {
