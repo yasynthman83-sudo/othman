@@ -15,7 +15,7 @@ const QuantitySummary: React.FC<QuantitySummaryProps> = ({ data }) => {
           <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
         </div>
         <div className="text-center">
-          <p className="text-sm sm:text-base font-medium text-purple-100 mb-1">عدد الاوردرات </p>
+          <p className="text-sm sm:text-base font-medium text-purple-100 mb-1">Orders Quantity </p>
           <p className="text-2xl sm:text-4xl font-bold text-white">
             {totalOrdersCount.toLocaleString()}
           </p>
