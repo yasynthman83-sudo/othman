@@ -37,9 +37,9 @@ const InventoryPage: React.FC = () => {
 
   const getFilterIcon = (filterType: FilterType) => {
     switch (filterType) {
-      case 'A1-A6': return <MapPin className="w-5 h-5 text-fedshi-purple" />;
-      case 'A7-A12': return <Warehouse className="w-5 h-5 text-fedshi-purple" />;
-      case 'B-AG': return <Package className="w-5 h-5 text-fedshi-purple" />;
+      case 'A1-A6': return <MapPin className="w-5 h-5 text-fedshrim-purple" />;
+      case 'A7-A12': return <Warehouse className="w-5 h-5 text-fedshrim-purple" />;
+      case 'B-AG': return <Package className="w-5 h-5 text-fedshrim-purple" />;
       default: return null;
     }
   };
@@ -49,6 +49,7 @@ const InventoryPage: React.FC = () => {
       <Toast message={toastMessage} isVisible={showToast} onClose={hideToast} />
       
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-fedshi-purple/10 font-inter">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-fedshrim-purple/10 font-inter">
         <div className="bg-white/90 backdrop-blur-sm shadow-lg border-b border-gray-200">
           <div className="px-4 sm:px-6 py-6 sm:py-8">
             <div className="flex items-center justify-between">
@@ -56,7 +57,7 @@ const InventoryPage: React.FC = () => {
               <div className="flex items-center space-x-2 sm:space-x-4">
                 <button
                   onClick={handleBack}
-                  className="flex items-center space-x-1 sm:space-x-2 text-gray-600 hover:text-fedshi-purple transition-all duration-200 hover:bg-fedshi-purple/5 px-2 sm:px-3 py-2 rounded-xl"
+                  className="flex items-center space-x-1 sm:space-x-2 text-gray-600 hover:text-fedshrim-purple transition-all duration-200 hover:bg-fedshrim-purple/5 px-2 sm:px-3 py-2 rounded-xl"
                 >
                   <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                   <span className="font-semibold text-sm sm:text-lg hidden sm:inline">Back to Home</span>
@@ -101,3 +102,5 @@ const InventoryPage: React.FC = () => {
 };
 
 export default InventoryPage;
+  )
+}
