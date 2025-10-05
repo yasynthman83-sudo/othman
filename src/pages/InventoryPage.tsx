@@ -72,7 +72,7 @@ const InventoryPage: React.FC = () => {
               <button
                 onClick={handleRefresh}
                 disabled={loading}
-                className="p-2 bg-fedshrim-gold text-fedshrim-purple rounded-xl hover:bg-fedshrim-gold-dark transition-all duration-200 disabled:opacity-50"
+                className="p-2 bg-fedshi-yellow text-fedshi-purple rounded-xl hover:bg-fedshi-yellow-dark transition-all duration-200 disabled:opacity-50"
                 title="Refresh Data"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
@@ -102,3 +102,5 @@ const InventoryPage: React.FC = () => {
 };
 
 export default InventoryPage;
+  )
+}
