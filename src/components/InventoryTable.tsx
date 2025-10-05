@@ -69,11 +69,11 @@ const InventoryTable: React.FC<InventoryTableProps> = ({ data, loading, error, o
     <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100 mb-8 w-full">
       <div className="overflow-x-auto">
         <table className="w-full min-w-max">
-          <thead className="bg-gradient-to-r from-fedshi-purple to-fedshi-purple-dark text-white sticky top-0 z-10">
+          <thead className="bg-gradient-to-r from-fedshrim-purple to-fedshrim-purple-dark text-white sticky top-0 z-10">
             <tr>
               <th className="px-4 py-3 text-left font-bold text-sm uppercase">Checked</th>
               <th className="px-4 py-3 text-left font-bold text-sm uppercase">Product Name</th>
-              <th className="px-4 py-3 text-left font-bold text-sm uppercase bg-fedshi-purple-dark">Location</th>
+              <th className="px-4 py-3 text-left font-bold text-sm uppercase bg-fedshrim-purple-dark">Location</th>
               <th className="px-4 py-3 text-left font-bold text-sm uppercase">VFID</th>
               <th className="px-4 py-3 text-left font-bold text-sm uppercase">Quantity</th>
               <th className="px-4 py-3 text-left font-bold text-sm uppercase">SKU Number</th>
@@ -92,11 +92,11 @@ const InventoryTable: React.FC<InventoryTableProps> = ({ data, loading, error, o
                     type="checkbox"
                     checked={!!item.Checked}
                     onChange={(e) => handleCheckboxChange(item.VFID, e.target.checked)}
-                    className="w-5 h-5 text-fedshi-purple rounded-lg focus:ring-fedshi-purple"
+                    className="w-5 h-5 text-fedshrim-purple rounded-lg focus:ring-fedshrim-purple"
                   />
                 </td>
                 <td className="px-4 py-3 font-semibold text-gray-900 text-sm">{item.ProductName}</td>
-                <td className="px-4 py-3 text-gray-900 text-lg font-bold bg-fedshi-purple/5">{item.Location}</td>
+                <td className="px-4 py-3 text-gray-900 text-lg font-bold bg-fedshrim-purple/5">{item.Location}</td>
                 <td className="px-4 py-3 text-gray-900 font-mono text-lg font-bold">{item.VFID}</td>
                 <td className="px-4 py-3 text-gray-900 font-bold text-sm">{item.Quantity}</td>
                 <td className="px-4 py-3 text-gray-700 font-mono text-sm">{item.SkuNumber}</td>
@@ -106,7 +106,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({ data, loading, error, o
                     value={localNotes[item.VFID] || ''}
                     onChange={(e) => handleNotesChange(item.VFID, e.target.value)}
                     onBlur={() => handleNotesBlur(item.VFID)}
-                    className="w-full p-2 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-fedshi-purple resize-none"
+                    className="w-full p-2 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-fedshrim-purple resize-none"
                     rows={2}
                     placeholder="Add notes..."
                   />

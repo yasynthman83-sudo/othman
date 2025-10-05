@@ -27,6 +27,7 @@ const RemainingItemsPage: React.FC = () => {
       <Toast message={toastMessage} isVisible={showToast} onClose={hideToast} />
       
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-fedshi-purple/10 font-inter">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-fedshrim-purple/10 font-inter">
         <div className="bg-white/90 backdrop-blur-sm shadow-lg border-b border-gray-200">
           <div className="px-4 sm:px-6 py-6 sm:py-8">
             <div className="flex items-center justify-between">
@@ -77,3 +78,5 @@ const RemainingItemsPage: React.FC = () => {
 };
 
 export default RemainingItemsPage;
+  )
+}
