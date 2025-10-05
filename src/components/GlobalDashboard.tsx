@@ -13,7 +13,7 @@ const GlobalDashboard: React.FC<GlobalDashboardProps> = ({ data }) => {
 
   return (
     <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 sm:p-6 mb-6 sm:mb-8">
-      <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 text-center font-inter"></h2>
+      <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 text-center font-inter"> Dashboard</h2>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
         <div className="flex items-center space-x-3 sm:space-x-4">
           <div className="p-2 sm:p-3 bg-fedshi-purple/10 rounded-2xl">
