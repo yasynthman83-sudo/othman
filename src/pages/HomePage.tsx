@@ -282,7 +282,7 @@ const getFilteredData = () => {
           <div className="bg-gradient-to-r from-fedshi-purple to-fedshi-purple-dark rounded-2xl shadow-2xl p-4 sm:p-6 mb-6 sm:mb-8 text-white text-center">
             <div className="flex items-center justify-center space-x-3 mb-2">
               <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-              <h2 className="text-lg sm:text-xl font-semibold">عدد الاوردرات </h2>
+              <h2 className="text-lg sm:text-xl font-semibold">Orders Quantity </h2>
             </div>
             <div className="text-3xl sm:text-5xl font-bold">
               {totalOrdersCount.toLocaleString()}
