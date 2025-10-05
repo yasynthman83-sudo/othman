@@ -94,49 +94,16 @@ const LocationFilter: React.FC<LocationFilterProps> = ({
   };
 
   const handleApplyFilter = () => {
-    // Filter items based on selected base locations
-    const matchingLocations: string[] = [];
-    
+    // Normalize and dedupe selected base locations
+    const normalizedBaseLocations = [...new Set(
+      tempSelectedLocations.map(loc => loc.trim().toUpperCase()).filter(loc => loc !== '')
+    )];
+
     if (tempSelectedLocations.length === 0) {
       onLocationFilter([]);
     } else {
-      data.forEach(item => {
-        const location = item.Location?.trim();
-        if (!location) return;
-        
-        const upperLocation = location.toUpperCase();
-        
-        tempSelectedLocations.forEach(baseLocation => {
-          const upperBase = baseLocation.toUpperCase();
-          
-          if (upperBase.startsWith('A')) {
-            // Match A locations: A4 should match A4, A4R1, A4L2, etc.
-            const baseNum = upperBase.substring(1);
-            if (upperLocation.startsWith(`A${baseNum}`)) {
-              matchingLocations.push(location);
-            }
-          } else if (upperBase.startsWith('B')) {
-            // Match B locations: B5 should match B5, B5R1, etc.
-            if (upperBase === 'B') {
-              if (upperLocation.startsWith('B')) {
-                matchingLocations.push(location);
-              }
-            } else {
-              const baseNum = upperBase.substring(1);
-              if (upperLocation.startsWith(`B${baseNum}`)) {
-                matchingLocations.push(location);
-              }
-            }
-          } else if (upperBase === 'AG') {
-            // Match AG locations: AG should match AG, AG-001, etc.
-            if (upperLocation.startsWith('AG')) {
-              matchingLocations.push(location);
-            }
-          }
-        });
-      });
-      
-      onLocationFilter([...new Set(matchingLocations)]);
+      // Store only the base tokens (e.g., "A1", "B5"), not expanded location lists
+      onLocationFilter(normalizedBaseLocations);
     }
     
     onClose();

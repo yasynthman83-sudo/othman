@@ -34,36 +34,40 @@ const getFilteredData = () => {
     return data;
   }
 
+  // Normalize selected locations: trim, uppercase, and dedupe
+  const normalizedLocations = [...new Set(
+    selectedLocations.map(loc => loc.trim().toUpperCase()).filter(loc => loc !== '')
+  )];
   return data.filter(item => {
     const location = item.Location?.trim();
     if (!location) return false;
 
     const upperLocation = location.toUpperCase();
 
-    return selectedLocations.some(baseLocation => {
-      const upperBase = baseLocation.toUpperCase();
+    return normalizedLocations.some(baseLocation => {
+      const upperBase = baseLocation; // Already normalized to uppercase
 
-      // ✅ A-locations: A1 matches A1, A1L1, A1R3 but NOT A10, A11
+      // ✅ Exact-prefix filtering: A1 matches A1, A1L1, A1R3 but NOT A10, A11
       if (upperBase.startsWith('A')) {
         const baseNum = upperBase.substring(1);
-        const regex = new RegExp(`^A${baseNum}(?!\\d)`, 'i');
+        const regex = new RegExp(`^A${baseNum}(?!\\d)`);
         return regex.test(upperLocation);
       }
 
-      // ✅ B-locations: B5 matches B5, B5R1 but NOT B50, B51
+      // ✅ Exact-prefix filtering: B5 matches B5, B5R1 but NOT B50, B51
       if (upperBase.startsWith('B')) {
         if (upperBase === 'B') {
-          return /^B(?!\d)/i.test(upperLocation);
+          return /^B(?!\d)/.test(upperLocation);
         } else {
           const baseNum = upperBase.substring(1);
-          const regex = new RegExp(`^B${baseNum}(?!\\d)`, 'i');
+          const regex = new RegExp(`^B${baseNum}(?!\\d)`);
           return regex.test(upperLocation);
         }
       }
 
-      // ✅ AG locations: AG matches AG, AG-001 but NOT AGA, AGB
+      // ✅ Exact-prefix filtering: AG matches AG, AG-001 but NOT AGA, AGB
       if (upperBase === 'AG') {
-        return /^AG(?![A-Z])/i.test(upperLocation);
+        return /^AG(?![A-Z])/.test(upperLocation);
       }
 
       return false;
