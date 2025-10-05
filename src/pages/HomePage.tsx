@@ -217,8 +217,7 @@ const getFilteredData = () => {
 
   // Show main dashboard
   return (
-    <>
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-fedshi-purple/10 font-inter">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-fedshi-purple/10 font-inter">
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-fedshrim-purple/10 font-inter">
         <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-16">
           {/* Header */}
@@ -371,6 +370,6 @@ const getFilteredData = () => {
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }
