@@ -189,7 +189,7 @@ const getFilteredData = () => {
               <div className="flex items-center space-x-2 sm:space-x-4">
                 <button
                   onClick={handleClearLocationFilter}
-                  className="flex items-center space-x-1 sm:space-x-2 text-gray-600 hover:text-fedshrim-purple transition-all duration-200 hover:bg-fedshrim-purple/5 px-2 sm:px-3 py-2 rounded-xl"
+                  className="flex items-center space-x-1 sm:space-x-2 text-gray-600 hover:text-fedshi-purple transition-all duration-200 hover:bg-fedshi-purple/5 px-2 sm:px-3 py-2 rounded-xl"
                 >
                   <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                   <span className="font-semibold text-sm sm:text-lg hidden sm:inline">Back to Dashboard</span>
@@ -219,21 +219,16 @@ const getFilteredData = () => {
   return (
     <>
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-fedshi-purple/10 font-inter">
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-fedshrim-purple/10 font-inter">
         <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-16">
           {/* Header */}
           <div className="text-center mb-8 sm:mb-12">
             <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden">
-                <img 
-                  src="/assets/image copy.png" 
-                  alt="Fedshrim Logo" 
-                  className="w-full h-full object-contain"
-                />
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-fedshi-purple to-fedshi-purple-dark rounded-2xl flex items-center justify-center shadow-lg">
+                <Package className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
               </div>
             </div>
             <h1 className="text-2xl sm:text-5xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight">
-              Fedshrim Picklist
+              Picklist APP
             </h1>
             <p className="text-sm sm:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed px-4">
             
@@ -284,7 +279,7 @@ const getFilteredData = () => {
           </div>
 
           {/* Total Orders Count Display */}
-          <div className="bg-gradient-to-r from-fedshrim-purple to-fedshrim-purple-dark rounded-2xl shadow-2xl p-4 sm:p-6 mb-6 sm:mb-8 text-white text-center">
+          <div className="bg-gradient-to-r from-fedshi-purple to-fedshi-purple-dark rounded-2xl shadow-2xl p-4 sm:p-6 mb-6 sm:mb-8 text-white text-center">
             <div className="flex items-center justify-center space-x-3 mb-2">
               <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               <h2 className="text-lg sm:text-xl font-semibold">عدد الاوردرات </h2>
@@ -350,7 +345,7 @@ const getFilteredData = () => {
             <button
               onClick={downloadNotesAsExcel}
               disabled={data.length === 0}
-              className="inline-flex items-center space-x-2 sm:space-x-3 px-6 sm:px-8 py-3 sm:py-4 bg-fedshrim-purple text-white font-semibold rounded-xl hover:bg-fedshrim-purple-dark transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px]"
+              className="inline-flex items-center space-x-2 sm:space-x-3 px-6 sm:px-8 py-3 sm:py-4 bg-fedshi-purple text-white font-semibold rounded-xl hover:bg-fedshi-purple-dark transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px]"
             >
               <Download className="w-4 h-4 sm:w-5 sm:h-5" />
               <span className="text-sm sm:text-base">Download Notes as Excel</span>
