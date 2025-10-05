@@ -43,15 +43,14 @@ const getFilteredData = () => {
     return selectedLocations.some(baseLocation => {
       const upperBase = baseLocation.toUpperCase();
 
-      // ✅ A-locations (e.g. A1, A2...)
+      // ✅ A-locations: A1 matches A1, A1L1, A1R3 but NOT A10, A11
       if (upperBase.startsWith('A')) {
         const baseNum = upperBase.substring(1);
-        // match A{num} followed by non-digit or end of string
         const regex = new RegExp(`^A${baseNum}(?!\\d)`, 'i');
         return regex.test(upperLocation);
       }
 
-      // ✅ B-locations (B, B1, B2...)
+      // ✅ B-locations: B5 matches B5, B5R1 but NOT B50, B51
       if (upperBase.startsWith('B')) {
         if (upperBase === 'B') {
           return /^B(?!\d)/i.test(upperLocation);
@@ -62,7 +61,7 @@ const getFilteredData = () => {
         }
       }
 
-      // ✅ AG locations (exact match only)
+      // ✅ AG locations: AG matches AG, AG-001 but NOT AGA, AGB
       if (upperBase === 'AG') {
         return /^AG(?![A-Z])/i.test(upperLocation);
       }
@@ -192,13 +191,6 @@ const getFilteredData = () => {
                   <span className="font-semibold text-sm sm:text-lg hidden sm:inline">Back to Dashboard</span>
                   <span className="font-semibold text-sm sm:hidden">Back</span>
                 </button>
-                <div className="h-6 sm:h-8 w-px bg-gray-300"></div>
-                <div className="flex items-center space-x-2 sm:space-x-3">
-                  <MapPin className="w-5 h-5 sm:w-6 sm:h-6 text-fedshi-purple" />
-                  <h1 className="text-lg sm:text-3xl font-bold text-gray-900">
-                    Selected Locations: {selectedLocations.join(', ')}
-                  </h1>
-                </div>
               </div>
             </div>
           </div>
