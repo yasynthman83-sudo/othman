@@ -31,15 +31,15 @@ const LocationFilter: React.FC<LocationFilterProps> = ({
     allLocations.forEach(location => {
       const upperLocation = location.toUpperCase();
       
-      // Match A followed by digits to get base location with precise boundary detection
-      const aMatch = upperLocation.match(/^A(\d+)(?![A-Z]*\d)/);
+      // Match A followed by digits to get base location (e.g., A4R1 -> A4, A10L1 -> A10)
+      const aMatch = upperLocation.match(/^A(\d+)/);
       if (aMatch) {
         baseLocations.add(`A${aMatch[1]}`);
         return;
       }
       
-      // Match B followed by optional digits with precise boundary detection
-      const bMatch = upperLocation.match(/^B(\d*)(?![A-Z]*\d)/);
+      // Match B followed by optional digits (e.g., B5R1 -> B5, B -> B)
+      const bMatch = upperLocation.match(/^B(\d*)/);
       if (bMatch) {
         baseLocations.add(bMatch[1] ? `B${bMatch[1]}` : 'B');
         return;
