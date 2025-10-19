@@ -6,35 +6,40 @@ interface InventoryTableProps {
   data: InventoryItem[];
   loading?: boolean;
   error?: string | null;
-  // هذه الدوال مطلوبة الآن وسيتم تمريرها من الصفحة الرئيسية
   onLocalNoteUpdate: (vfid: string, note: string) => void;
   onLocalCheckedUpdate: (vfid: string, checked: boolean) => void;
 }
 
-const InventoryTable: React.FC<InventoryTableProps> = ({ data, loading, error, onLocalNoteUpdate, onLocalCheckedUpdate }) => {
+const InventoryTable: React.FC<InventoryTableProps> = ({
+  data,
+  loading,
+  error,
+  onLocalNoteUpdate,
+  onLocalCheckedUpdate,
+}) => {
   const [localNotes, setLocalNotes] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    // تحديث الملاحظات المحلية عند تغير البيانات
-    const initialNotes = data.reduce((acc, item) => {
-      acc[item.VFID] = item.Notes || '';
-      return acc;
-    }, {} as Record<string, string>);
-    setLocalNotes(initialNotes);
+    // تحديث النصوص عند تغيير البيانات بدون مسح ما كتبه المستخدم
+    setLocalNotes(prev => {
+      const updated: Record<string, string> = {};
+      data.forEach(item => {
+        // إذا المستخدم لم يكتب شيء جديد، نحتفظ بالنص الأصلي
+        updated[item.VFID] = prev[item.VFID] ?? item.Notes ?? '';
+      });
+      return updated;
+    });
   }, [data]);
 
   const handleCheckboxChange = (vfid: string, checked: boolean) => {
-    // استدعاء الدالة مباشرة من الـ props للحفظ
     onLocalCheckedUpdate(vfid, checked);
   };
 
   const handleNotesChange = (vfid: string, value: string) => {
-    // تحديث الملاحظة محلياً لسرعة الاستجابة
     setLocalNotes(prev => ({ ...prev, [vfid]: value }));
   };
 
-  const handleNotesBlur = (vfid: string) => {
-    // عند الخروج من حقل الملاحظات، قم بالحفظ
+  const handleNotesSave = (vfid: string) => {
     const finalNote = localNotes[vfid] || '';
     onLocalNoteUpdate(vfid, finalNote);
   };
@@ -51,19 +56,19 @@ const InventoryTable: React.FC<InventoryTableProps> = ({ data, loading, error, o
   if (error) {
     return <div className="p-12 text-center text-red-600 font-semibold">{error}</div>;
   }
-  
+
   if (data.length === 0) {
-     return (
-       <div className="bg-white rounded-xl shadow-lg p-12">
-         <div className="text-center">
-           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-             <span className="text-gray-400 text-2xl">📦</span>
-           </div>
-           <p className="text-gray-500 text-lg">لا توجد عناصر مطابقة للبحث أو الفلتر</p>
-         </div>
-       </div>
-     );
-   }
+    return (
+      <div className="bg-white rounded-xl shadow-lg p-12">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-gray-400 text-2xl">📦</span>
+          </div>
+          <p className="text-gray-500 text-lg">لا توجد عناصر مطابقة للبحث أو الفلتر</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100 mb-8 w-full">
@@ -85,7 +90,9 @@ const InventoryTable: React.FC<InventoryTableProps> = ({ data, loading, error, o
             {data.map((item, index) => (
               <tr
                 key={item.VFID}
-                className={`border-b border-gray-100 ${item.Checked ? 'bg-green-100' : index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
+                className={`border-b border-gray-100 ${
+                  item.Checked ? 'bg-green-100' : index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
+                }`}
               >
                 <td className="px-4 py-3">
                   <input
@@ -101,15 +108,23 @@ const InventoryTable: React.FC<InventoryTableProps> = ({ data, loading, error, o
                 <td className="px-4 py-3 text-gray-900 font-bold text-sm">{item.Quantity}</td>
                 <td className="px-4 py-3 text-gray-700 font-mono text-sm">{item.SkuNumber}</td>
                 <td className="px-4 py-3 text-gray-700 text-sm">{item["1"] || 0}</td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 relative">
                   <textarea
                     value={localNotes[item.VFID] || ''}
                     onChange={(e) => handleNotesChange(item.VFID, e.target.value)}
-                    onBlur={() => handleNotesBlur(item.VFID)}
-                    className="w-full p-2 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-fedshi-purple resize-none"
+                    className="w-full p-2 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-fedshi-purple resize-none sm:text-sm text-xs"
                     rows={2}
                     placeholder="Add notes..."
                   />
+                  {localNotes[item.VFID] !== (item.Notes || '') && (
+                    <button
+                      onClick={() => handleNotesSave(item.VFID)}
+                      className="absolute top-1 right-1 text-white bg-fedshi-purple hover:bg-fedshi-purple-dark p-1 rounded-lg w-6 h-6 flex items-center justify-center text-xs sm:w-7 sm:h-7 sm:text-sm"
+                      title="Save Note"
+                    >
+                      💾
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

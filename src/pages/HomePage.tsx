@@ -1,6 +1,6 @@
 import React from 'react';
 import { useState, useRef, useEffect } from 'react';
-import { Package, MapPin, Warehouse, Loader2, RotateCcw, Download, ShoppingCart, Upload, ArrowLeft } from 'lucide-react';
+import { Package, MapPin, Warehouse, Loader2, RotateCcw, Download, ShoppingCart, Upload, ArrowLeft, RefreshCw } from 'lucide-react';
 import FilterButton from '../components/FilterButton';
 import GlobalDashboard from '../components/GlobalDashboard';
 import QuantitySummary from '../components/QuantitySummary';
@@ -28,53 +28,52 @@ export default function HomePage() {
   
   const totalOrdersCount = data.reduce((sum, item) => sum + (item.OrdersCount || 0), 0);
 
- // ✅ Precise filtering - fixed A1 matching A10 bug
-const getFilteredData = () => {
-  if (selectedLocations.length === 0) {
-    return data;
-  }
+  // ✅ Precise filtering - fixed A1 matching A10 bug
+  const getFilteredData = () => {
+    if (selectedLocations.length === 0) {
+      return data;
+    }
 
-  // Normalize selected locations: trim, uppercase, and dedupe
-  const normalizedLocations = [...new Set(
-    selectedLocations.map(loc => loc.trim().toUpperCase()).filter(loc => loc !== '')
-  )];
-  return data.filter(item => {
-    const location = item.Location?.trim();
-    if (!location) return false;
+    // Normalize selected locations: trim, uppercase, and dedupe
+    const normalizedLocations = [...new Set(
+      selectedLocations.map(loc => loc.trim().toUpperCase()).filter(loc => loc !== '')
+    )];
+    return data.filter(item => {
+      const location = item.Location?.trim();
+      if (!location) return false;
 
-    const upperLocation = location.toUpperCase();
+      const upperLocation = location.toUpperCase();
 
-    return normalizedLocations.some(baseLocation => {
-      const upperBase = baseLocation; // Already normalized to uppercase
+      return normalizedLocations.some(baseLocation => {
+        const upperBase = baseLocation; // Already normalized to uppercase
 
-      // ✅ Exact-prefix filtering: A1 matches A1, A1L1, A1R3 but NOT A10, A11
-      if (upperBase.startsWith('A')) {
-        const baseNum = upperBase.substring(1);
-        const regex = new RegExp(`^A${baseNum}(?!\\d)`);
-        return regex.test(upperLocation);
-      }
-
-      // ✅ Exact-prefix filtering: B5 matches B5, B5R1 but NOT B50, B51
-      if (upperBase.startsWith('B')) {
-        if (upperBase === 'B') {
-          return /^B(?!\d)/.test(upperLocation);
-        } else {
+        // ✅ Exact-prefix filtering: A1 matches A1, A1L1, A1R3 but NOT A10, A11
+        if (upperBase.startsWith('A')) {
           const baseNum = upperBase.substring(1);
-          const regex = new RegExp(`^B${baseNum}(?!\\d)`);
+          const regex = new RegExp(`^A${baseNum}(?!\\d)`);
           return regex.test(upperLocation);
         }
-      }
 
-      // ✅ Exact-prefix filtering: AG matches AG, AG-001 but NOT AGA, AGB
-      if (upperBase === 'AG') {
-        return /^AG(?![A-Z])/.test(upperLocation);
-      }
+        // ✅ Exact-prefix filtering: B5 matches B5, B5R1 but NOT B50, B51
+        if (upperBase.startsWith('B')) {
+          if (upperBase === 'B') {
+            return /^B(?!\d)/.test(upperLocation);
+          } else {
+            const baseNum = upperBase.substring(1);
+            const regex = new RegExp(`^B${baseNum}(?!\\d)`);
+            return regex.test(upperLocation);
+          }
+        }
 
-      return false;
+        // ✅ Exact-prefix filtering: AG matches AG, AG-001 but NOT AGA, AGB
+        if (upperBase === 'AG') {
+          return /^AG(?![A-Z])/.test(upperLocation);
+        }
+
+        return false;
+      });
     });
-  });
-};
-
+  };
 
   const filteredData = getFilteredData();
   const searchedData = searchInventoryData(filteredData, searchTerm);
@@ -97,7 +96,6 @@ const getFilteredData = () => {
       return;
     }
 
-    // Prepare data for Excel export
     const excelData = itemsWithNotes.map(item => ({
       VFID: item.VFID,
       Location: item.Location || 'Unassigned',
@@ -105,11 +103,9 @@ const getFilteredData = () => {
       Note: item.Notes || ''
     }));
 
-    // Create workbook and worksheet
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.json_to_sheet(excelData);
 
-    // Set column widths for better readability
     const columnWidths = [
       { wch: 12 }, // VFID
       { wch: 15 }, // Location
@@ -118,13 +114,8 @@ const getFilteredData = () => {
     ];
     worksheet['!cols'] = columnWidths;
 
-    // Add worksheet to workbook
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Notes Summary');
-
-    // Generate filename with current date
     const filename = `inventory-notes-${new Date().toISOString().split('T')[0]}.xlsx`;
-
-    // Download the Excel file
     XLSX.writeFile(workbook, filename);
   };
 
@@ -136,11 +127,14 @@ const getFilteredData = () => {
     const file = event.target.files?.[0];
     if (file) {
       await uploadFile(file);
-      // Reset the input so the same file can be selected again
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     }
+  };
+  
+  const handleRefresh = async () => {
+    await refetch();
   };
 
   if (loading) {
@@ -175,7 +169,6 @@ const getFilteredData = () => {
     );
   }
 
-  // Show location-filtered view
   if (selectedLocations.length > 0) {
     const checkedCount = searchedData.filter(item => item.Checked).length;
     const totalCount = searchedData.length;
@@ -199,7 +192,6 @@ const getFilteredData = () => {
             </div>
           </div>
         </div>
-
         <div className="px-4 sm:px-6 py-6 sm:py-8">
           <StatisticsBar checkedCount={checkedCount} totalCount={totalCount} remainingCount={remainingCount} />
           <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} />
@@ -215,23 +207,28 @@ const getFilteredData = () => {
     );
   }
 
-  // Show main dashboard
   return (
     <>
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-fedshi-purple/10 font-inter">
         <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-16">
-          {/* Header */}
           <div className="text-center mb-8 sm:mb-12">
-            <div className="flex justify-center mb-6">
+            <div className="flex justify-center items-center mb-6 relative">
               <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-fedshi-purple to-fedshi-purple-dark rounded-2xl flex items-center justify-center shadow-lg">
                 <Package className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
               </div>
+              <button
+                onClick={handleRefresh}
+                disabled={loading}
+                className="absolute top-0 right-0 p-3 bg-fedshi-yellow text-fedshi-purple rounded-full hover:bg-fedshi-yellow-dark transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Refresh Data"
+              >
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
+              </button>
             </div>
             <h1 className="text-2xl sm:text-5xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight">
               Picklist APP
             </h1>
             <p className="text-sm sm:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed px-4">
-            
             </p>
             <div className="mt-4 sm:mt-6 inline-flex items-center px-3 sm:px-4 py-2 bg-green-100 rounded-full">
               <div className="w-3 h-3 bg-green-500 rounded-full mr-2 animate-pulse"></div>
@@ -241,7 +238,6 @@ const getFilteredData = () => {
             </div>
           </div>
 
-          {/* Upload File Button */}
           <div className="text-center mb-8 sm:mb-12">
             <div className="flex items-center justify-center">
               <button
@@ -253,7 +249,6 @@ const getFilteredData = () => {
                 <Upload className="w-5 h-5" />
               </button>
             </div>
-            
             <div className="text-xs sm:text-sm text-gray-600 space-y-1 mt-4">
               <p><strong>Auto-refresh:</strong> </p>
               <p><strong>Upload:</strong> </p>
@@ -267,8 +262,6 @@ const getFilteredData = () => {
                   </div>
                 )}
             </div>
-            
-            {/* Hidden file input */}
             <input
               ref={fileInputRef}
               type="file"
@@ -278,7 +271,6 @@ const getFilteredData = () => {
             />
           </div>
 
-          {/* Total Orders Count Display */}
           <div className="bg-gradient-to-r from-fedshi-purple to-fedshi-purple-dark rounded-2xl shadow-2xl p-4 sm:p-6 mb-6 sm:mb-8 text-white text-center">
             <div className="flex items-center justify-center space-x-3 mb-2">
               <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
@@ -290,10 +282,8 @@ const getFilteredData = () => {
             <p className="text-sm sm:text-base text-white/80 mt-2"></p>
           </div>
 
-          {/* Global Dashboard */}
           <GlobalDashboard data={data} />
 
-          {/* Filter Buttons */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 max-w-7xl mx-auto mb-8 sm:mb-16">
             <FilterButton
               filterType="A1-A6"
@@ -302,7 +292,6 @@ const getFilteredData = () => {
               icon={<MapPin className="w-6 h-6 text-fedshi-purple" />}
               itemCount={a1a6Count}
             />
-            
             <FilterButton
               filterType="A7-A12"
               title="A7-A12 Locations"
@@ -310,7 +299,6 @@ const getFilteredData = () => {
               icon={<Warehouse className="w-6 h-6 text-fedshi-purple" />}
               itemCount={a7a12Count}
             />
-            
             <FilterButton
               filterType="B-AG"
               title="B/AG Locations"
@@ -318,7 +306,6 @@ const getFilteredData = () => {
               icon={<Package className="w-6 h-6 text-fedshi-purple" />}
               itemCount={bagCount}
             />
-            
             <FilterButton
               filterType="location-filter"
               title="Choose Location"
@@ -328,7 +315,6 @@ const getFilteredData = () => {
               isSpecial={true}
               onClick={() => setShowLocationFilter(true)}
             />
-            
             <FilterButton
               filterType="remaining-items"
               title="Remaining Items"
@@ -340,7 +326,6 @@ const getFilteredData = () => {
             />
           </div>
 
-          {/* Download Notes Button */}
           <div className="text-center mb-8 sm:mb-12">
             <button
               onClick={downloadNotesAsExcel}
@@ -352,10 +337,8 @@ const getFilteredData = () => {
             </button>
           </div>
 
-          {/* Global Notes Table */}
           <GlobalNotesTable data={data} />
 
-          {/* Location Filter Modal */}
           {showLocationFilter && (
             <LocationFilter 
               data={data} 
