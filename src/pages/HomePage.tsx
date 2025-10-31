@@ -21,6 +21,7 @@ export default function HomePage() {
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showLocationFilter, setShowLocationFilter] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   const a1a6Count = filterInventoryData(data, 'A1-A6').length;
   const a7a12Count = filterInventoryData(data, 'A7-A12').length;
@@ -128,6 +129,8 @@ export default function HomePage() {
     const file = event.target.files?.[0];
     if (file) {
       await uploadFile(file);
+      // Trigger refresh of Box Count Summary when new data is uploaded
+      setRefreshTrigger(prev => prev + 1);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -285,7 +288,7 @@ export default function HomePage() {
 
           <GlobalDashboard data={data} />
 
-          <BoxCountSummary picklistData={data} />
+          <BoxCountSummary refreshTrigger={refreshTrigger} />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 max-w-7xl mx-auto mb-8 sm:mb-16">
             <FilterButton

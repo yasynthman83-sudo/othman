@@ -14,10 +14,10 @@ interface BoxCount {
 }
 
 interface BoxCountSummaryProps {
-  picklistData: any[];
+  refreshTrigger?: number; // Used to trigger refresh when new data is uploaded
 }
 
-const BoxCountSummary: React.FC<BoxCountSummaryProps> = ({ picklistData }) => {
+const BoxCountSummary: React.FC<BoxCountSummaryProps> = ({ refreshTrigger }) => {
   const [boxCounts, setBoxCounts] = useState<BoxCount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,69 +33,53 @@ const BoxCountSummary: React.FC<BoxCountSummaryProps> = ({ picklistData }) => {
   ];
 
   useEffect(() => {
-    calculateBoxCounts();
-  }, [picklistData]);
+    fetchBoxCounts();
+  }, [refreshTrigger]);
 
-  const calculateBoxCounts = async () => {
+  const fetchBoxCounts = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      // Get item_notes data from database
-      const { data: itemNotes, error: notesError } = await supabase
-        .from('item_notes')
-        .select('vfid, note_content');
+      // Execute the JOIN query to get box counts directly from database
+      const { data: queryResult, error: queryError } = await supabase
+        .rpc('get_box_counts');
 
-      if (notesError) {
-        throw new Error(`Failed to fetch item notes: ${notesError.message}`);
-      }
-
-      if (!itemNotes || itemNotes.length === 0) {
-        setError('No item notes found in database');
-        setLoading(false);
+      if (queryError) {
+        // If RPC doesn't exist, fall back to manual query
+        console.warn('RPC not found, using manual query:', queryError.message);
+        await fetchBoxCountsManual();
         return;
       }
 
-      // Create a map of VFID to box type from note_content
-      const vfidToBoxType = new Map<string, string>();
-      itemNotes.forEach((note: any) => {
-        if (note.vfid && note.note_content) {
-          // Extract box type from note_content
-          const noteContent = note.note_content.toLowerCase().trim();
-          
-          // Match box types in note_content (case insensitive)
-          let boxType = '';
-          if (noteContent.includes('bubble')) boxType = 'Bubble';
-          else if (noteContent.includes('big')) boxType = 'Big';
-          else if (noteContent.includes('small')) boxType = 'Small';
-          else if (noteContent.includes('bag')) boxType = 'Bag';
-          else if (noteContent.includes('large')) boxType = 'Large';
-          else if (noteContent.includes('medium')) boxType = 'Medium';
-          
-          if (boxType) {
-            vfidToBoxType.set(note.vfid, boxType);
-          }
-        }
-      });
+      if (!queryResult) {
+        throw new Error('No data returned from box counts query');
+      }
 
-      // Initialize counts for all box types
-      const counts = new Map<string, number>();
-      boxTypes.forEach(box => counts.set(box.type, 0));
+      // Process the query results
+      const countsMap = new Map<string, number>();
+      
+      // Initialize all box types with 0
+      boxTypes.forEach(box => countsMap.set(box.type.toLowerCase(), 0));
 
-      // Count boxes based on current picklist data
-      picklistData.forEach(item => {
-        const vfid = item.VFID;
-        const boxType = vfidToBoxType.get(vfid);
-        
-        if (boxType && counts.has(boxType)) {
-          counts.set(boxType, counts.get(boxType)! + 1);
-        }
+      // Update counts from query results
+      queryResult.forEach((row: any) => {
+        const boxType = row.box_type?.toLowerCase() || '';
+        const count = parseInt(row.total_count) || 0;
+
+        // Map note_content to box types
+        if (boxType.includes('bubble')) countsMap.set('bubble', count);
+        else if (boxType.includes('big')) countsMap.set('big', count);
+        else if (boxType.includes('small')) countsMap.set('small', count);
+        else if (boxType.includes('bag')) countsMap.set('bag', count);
+        else if (boxType.includes('large')) countsMap.set('large', count);
+        else if (boxType.includes('medium')) countsMap.set('medium', count);
       });
 
       // Create box count objects with colors and icons
       const boxCountsArray: BoxCount[] = boxTypes.map(boxType => ({
         type: boxType.type,
-        count: counts.get(boxType.type) || 0,
+        count: countsMap.get(boxType.type.toLowerCase()) || 0,
         color: boxType.color,
         icon: boxType.icon
       }));
@@ -103,9 +87,75 @@ const BoxCountSummary: React.FC<BoxCountSummaryProps> = ({ picklistData }) => {
       setBoxCounts(boxCountsArray);
     } catch (err: any) {
       setError(err.message);
-      console.error('Error calculating box counts:', err);
+      console.error('Error fetching box counts:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchBoxCountsManual = async () => {
+    try {
+      // Manual JOIN query as fallback
+      const { data: joinResult, error: joinError } = await supabase
+        .from('Picklist')
+        .select(`
+          VFID,
+          item_notes!inner(
+            vfid,
+            note_content
+          )
+        `);
+
+      if (joinError) {
+        throw new Error(`Failed to join tables: ${joinError.message}`);
+      }
+
+      if (!joinResult || joinResult.length === 0) {
+        // Initialize all counts to 0 if no data
+        const boxCountsArray: BoxCount[] = boxTypes.map(boxType => ({
+          type: boxType.type,
+          count: 0,
+          color: boxType.color,
+          icon: boxType.icon
+        }));
+        setBoxCounts(boxCountsArray);
+        return;
+      }
+
+      // Count box types from joined data
+      const countsMap = new Map<string, number>();
+      boxTypes.forEach(box => countsMap.set(box.type.toLowerCase(), 0));
+
+      joinResult.forEach((item: any) => {
+        const noteContent = item.item_notes?.note_content?.toLowerCase() || '';
+        
+        // Map note_content to box types
+        if (noteContent.includes('bubble')) {
+          countsMap.set('bubble', (countsMap.get('bubble') || 0) + 1);
+        } else if (noteContent.includes('big')) {
+          countsMap.set('big', (countsMap.get('big') || 0) + 1);
+        } else if (noteContent.includes('small')) {
+          countsMap.set('small', (countsMap.get('small') || 0) + 1);
+        } else if (noteContent.includes('bag')) {
+          countsMap.set('bag', (countsMap.get('bag') || 0) + 1);
+        } else if (noteContent.includes('large')) {
+          countsMap.set('large', (countsMap.get('large') || 0) + 1);
+        } else if (noteContent.includes('medium')) {
+          countsMap.set('medium', (countsMap.get('medium') || 0) + 1);
+        }
+      });
+
+      // Create box count objects with colors and icons
+      const boxCountsArray: BoxCount[] = boxTypes.map(boxType => ({
+        type: boxType.type,
+        count: countsMap.get(boxType.type.toLowerCase()) || 0,
+        color: boxType.color,
+        icon: boxType.icon
+      }));
+
+      setBoxCounts(boxCountsArray);
+    } catch (err: any) {
+      throw new Error(`Manual query failed: ${err.message}`);
     }
   };
 
@@ -124,7 +174,7 @@ const BoxCountSummary: React.FC<BoxCountSummaryProps> = ({ picklistData }) => {
         </div>
         <div className="flex items-center justify-center py-8">
           <Loader2 className="w-6 h-6 text-fedshi-purple animate-spin mr-3" />
-          <span className="text-gray-600">Calculating box counts...</span>
+          <span className="text-gray-600">Loading box counts from database...</span>
         </div>
       </div>
     );
@@ -140,7 +190,7 @@ const BoxCountSummary: React.FC<BoxCountSummaryProps> = ({ picklistData }) => {
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-700 text-sm">{error}</p>
           <button
-            onClick={calculateBoxCounts}
+            onClick={fetchBoxCounts}
             className="mt-2 px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
           >
             Retry
@@ -159,11 +209,20 @@ const BoxCountSummary: React.FC<BoxCountSummaryProps> = ({ picklistData }) => {
           </div>
           <h2 className="text-lg sm:text-xl font-bold text-gray-900 font-inter">Box Count Summary</h2>
         </div>
-        <div className="flex items-center space-x-2 bg-fedshi-purple/10 px-3 py-2 rounded-lg">
-          <Package className="w-4 h-4 text-fedshi-purple" />
-          <span className="text-fedshi-purple font-bold text-sm">
-            Total: {getTotalBoxes()} boxes
-          </span>
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 bg-fedshi-purple/10 px-3 py-2 rounded-lg">
+            <Package className="w-4 h-4 text-fedshi-purple" />
+            <span className="text-fedshi-purple font-bold text-sm">
+              Total: {getTotalBoxes()} boxes
+            </span>
+          </div>
+          <button
+            onClick={fetchBoxCounts}
+            className="flex items-center space-x-1 text-fedshi-purple hover:text-fedshi-purple-dark transition-colors px-3 py-2 rounded-lg hover:bg-fedshi-purple/5"
+            title="Refresh box counts"
+          >
+            <span className="text-sm">Refresh</span>
+          </button>
         </div>
       </div>
 
@@ -182,13 +241,10 @@ const BoxCountSummary: React.FC<BoxCountSummaryProps> = ({ picklistData }) => {
 
       <div className="mt-4 pt-4 border-t border-gray-200">
         <div className="flex items-center justify-between text-sm text-gray-600">
-          <span>Based on {picklistData.length} items in Picklist table</span>
-          <button
-            onClick={calculateBoxCounts}
-            className="flex items-center space-x-1 text-fedshi-purple hover:text-fedshi-purple-dark transition-colors"
-          >
-            <span>Refresh</span>
-          </button>
+          <span>Data fetched directly from Picklist ⋈ item_notes tables</span>
+          <span className="text-xs text-gray-500">
+            Last updated: {new Date().toLocaleTimeString()}
+          </span>
         </div>
       </div>
     </div>
