@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Package, MapPin, Warehouse, Loader2, RotateCcw, Download, ShoppingCart, Upload, ArrowLeft, RefreshCw } from 'lucide-react';
 import FilterButton from '../components/FilterButton';
 import GlobalDashboard from '../components/GlobalDashboard';
-import BoxRequirements from '../components/BoxRequirements';
+import BoxCountSummary from '../components/BoxCountSummary';
 import QuantitySummary from '../components/QuantitySummary';
 import GlobalNotesTable from '../components/GlobalNotesTable';
 import InventoryTable from '../components/InventoryTable';
@@ -285,7 +285,7 @@ export default function HomePage() {
 
           <GlobalDashboard data={data} />
 
-          <BoxRequirements currentData={data} />
+          <BoxCountSummary picklistData={data} />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 max-w-7xl mx-auto mb-8 sm:mb-16">
             <FilterButton
